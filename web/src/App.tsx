@@ -5,6 +5,7 @@ import { SaveDot } from './components/SaveDot'
 import { Timeline } from './components/Timeline'
 import { Sidebar, type Project } from './components/Sidebar'
 import { CommandPalette } from './components/CommandPalette'
+import { TimeScrubber } from './components/TimeScrubber'
 
 export default function App() {
   const [authed, setAuthed] = useState<boolean | null>(null)
@@ -49,6 +50,8 @@ export default function App() {
           onSelect={id => { setProject(id); setAnchor(null); setProjRefresh(k => k + 1) }} />
         <Timeline project={project} anchor={anchor} onExitAnchor={() => setAnchor(null)}
           onTagClick={id => { setProject(id); setAnchor(null); setProjRefresh(k => k + 1) }} />
+        <TimeScrubber refreshKey={projRefresh}
+          onJump={day => { setProject(null); setAnchor(day) }} />
       </main>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)}
         projects={projects}
