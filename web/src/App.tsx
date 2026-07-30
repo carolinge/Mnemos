@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { api, onUnauthorized } from './api'
 import { Login } from './components/Login'
 import { SaveDot } from './components/SaveDot'
-import { EntryCard } from './components/EntryCard'
+import { Timeline } from './components/Timeline'
 
 export default function App() {
   const [authed, setAuthed] = useState<boolean | null>(null)
+  const [project, setProject] = useState<string | null>(null)
+  const [anchor, setAnchor] = useState<string | null>(null)
 
   useEffect(() => {
     const kick = () => setAuthed(false)
@@ -20,9 +22,7 @@ export default function App() {
     <div className="app">
       <header className="topbar"><SaveDot /></header>
       <main className="main">
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: 16, width: '100%' }}>
-          <EntryCard entry={null} day={new Date().toISOString().slice(0, 10)} draftKey="scratch" />
-        </div>
+        <Timeline project={project} anchor={anchor} onExitAnchor={() => setAnchor(null)} />
       </main>
     </div>
   )
