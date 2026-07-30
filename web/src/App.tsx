@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api, onUnauthorized } from './api'
 import { Login } from './components/Login'
 import { SaveDot } from './components/SaveDot'
+import { EntryCard } from './components/EntryCard'
 
 export default function App() {
   const [authed, setAuthed] = useState<boolean | null>(null)
@@ -18,7 +19,11 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar"><SaveDot /></header>
-      <main className="main">{/* Timeline 于 Task 11 接入 */}</main>
+      <main className="main">
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: 16, width: '100%' }}>
+          <EntryCard entry={null} day={new Date().toISOString().slice(0, 10)} draftKey="scratch" />
+        </div>
+      </main>
     </div>
   )
 }

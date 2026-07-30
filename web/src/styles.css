@@ -56,3 +56,63 @@ body {
   background: var(--accent); color: #fff; cursor: pointer;
 }
 .login-err { color: var(--danger); margin: 0; font-size: 13px; }
+
+/* ---------- 条目卡片与编辑器 ---------- */
+.entry-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 10px 18px 14px; margin: 10px 0; box-shadow: var(--shadow);
+  transition: border-color 0.2s;
+}
+.entry-card:focus-within { border-color: var(--accent); }
+.entry-head {
+  display: flex; justify-content: space-between; align-items: center;
+  min-height: 22px; font-size: 12px; color: var(--muted);
+}
+.entry-actions { opacity: 0; transition: opacity 0.15s; display: flex; gap: 2px; }
+.entry-card:hover .entry-actions { opacity: 1; }
+.icon-btn {
+  border: none; background: none; color: var(--muted); cursor: pointer;
+  font-size: 14px; padding: 2px 6px; border-radius: 6px; text-decoration: none;
+}
+.icon-btn:hover { background: var(--border); color: var(--fg); }
+
+.menu-bar {
+  display: flex; gap: 2px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 8px; padding: 3px; box-shadow: var(--shadow);
+}
+.menu-bar button {
+  border: none; background: none; color: var(--fg); cursor: pointer;
+  font-size: 13px; padding: 4px 8px; border-radius: 6px; white-space: nowrap;
+}
+.menu-bar button:hover { background: var(--border); }
+.menu-bar button.on { background: var(--accent); color: #fff; }
+
+.ProseMirror { outline: none; min-height: 28px; }
+.ProseMirror p { margin: 0.4em 0; }
+.ProseMirror h1, .ProseMirror h2, .ProseMirror h3 {
+  font-family: var(--serif); line-height: 1.35; margin: 0.8em 0 0.3em;
+}
+.ProseMirror h1 { font-size: 1.5em; } .ProseMirror h2 { font-size: 1.3em; } .ProseMirror h3 { font-size: 1.12em; }
+.ProseMirror code {
+  font-family: var(--mono); font-size: 0.88em; background: var(--border);
+  padding: 0.1em 0.35em; border-radius: 4px;
+}
+.ProseMirror pre {
+  font-family: var(--mono); font-size: 0.85em; background: var(--bg);
+  border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; overflow-x: auto;
+}
+.ProseMirror pre code { background: none; padding: 0; }
+.ProseMirror blockquote {
+  border-left: 3px solid var(--accent); margin: 0.5em 0; padding: 0.1em 0 0.1em 1em; color: var(--muted);
+}
+.ProseMirror mark { background: #f5e07a; border-radius: 2px; padding: 0 2px; }
+.ProseMirror img { max-width: 100%; border-radius: 8px; }
+.ProseMirror a { color: var(--accent); }
+.ProseMirror table { border-collapse: collapse; margin: 0.6em 0; width: 100%; }
+.ProseMirror th, .ProseMirror td { border: 1px solid var(--border); padding: 5px 10px; }
+.ProseMirror th { background: var(--bg); font-weight: 600; }
+.ProseMirror ul[data-type="taskList"] { list-style: none; padding-left: 0.2em; }
+.ProseMirror ul[data-type="taskList"] li { display: flex; gap: 8px; }
+.ProseMirror .is-editor-empty:first-child::before {
+  content: attr(data-placeholder); color: var(--muted); float: left; height: 0; pointer-events: none;
+}
