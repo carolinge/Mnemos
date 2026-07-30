@@ -5,10 +5,11 @@ import { useTimeline } from '../hooks/useTimeline'
 import type { EntryData } from '../hooks/useAutosave'
 import { EntryCard } from './EntryCard'
 
-export function Timeline({ project, anchor, onExitAnchor }: {
+export function Timeline({ project, anchor, onExitAnchor, onTagClick }: {
   project: string | null
   anchor: string | null
   onExitAnchor: () => void
+  onTagClick?: (projectId: string) => void
 }) {
   const t = useTimeline(project, anchor)
   const boxRef = useRef<HTMLDivElement>(null)
@@ -76,7 +77,7 @@ export function Timeline({ project, anchor, onExitAnchor }: {
           <h2 className="day-head">{fmtDay(d.day)}</h2>
           {d.entries.map(e => (
             <EntryCard key={e.id} entry={e} day={d.day} draftKey={e.id}
-              onDeleted={t.removeEntry}
+              onDeleted={t.removeEntry} onTagClick={onTagClick}
               onMove={(id, dir) => move(d.day, id, dir)} />
           ))}
         </section>
@@ -86,7 +87,7 @@ export function Timeline({ project, anchor, onExitAnchor }: {
         <section data-day={today}>
           {!hasTodayGroup && <h2 className="day-head">{fmtDay(today)}</h2>}
           {composers.map(key => (
-            <EntryCard key={key} entry={null} day={today} draftKey={`new:${key}`} />
+            <EntryCard key={key} entry={null} day={today} draftKey={`new:${key}`} onTagClick={onTagClick} />
           ))}
           <button className="new-entry" onClick={() => setComposers(c => [...c, crypto.randomUUID()])}>
             ＋ 新条目

@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor, BubbleMenu, FloatingMenu, type Editor } from '@tiptap/react'
 import { buildExtensions } from '../editor/extensions'
 import { useAutosave, type EntryData } from '../hooks/useAutosave'
@@ -6,13 +6,14 @@ import { api } from '../api'
 
 const EMPTY_DOC = { type: 'doc', content: [] }
 
-export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove }: {
+export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove, onTagClick }: {
   entry: EntryData | null      // null = 尚未落库的新条目
   day: string
   draftKey: string
   onCreated?: (e: EntryData) => void
   onDeleted?: (id: string) => void
   onMove?: (id: string, dir: -1 | 1) => void
+  onTagClick?: (projectId: string) => void
 }) {
   // 断网草稿优先于服务器内容
   const initialContent = useMemo(() => {
@@ -24,18 +25,33 @@ export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftKey])
 
+  const [tags, setTags] = useState<{ id?: string; name: string; color?: string }[]>(entry?.tags ?? [])
+  const tagsRef = useRef(tags)
+  tagsRef.current = tags
+
   const editorRef = useRef<Editor | null>(null)
   const autosave = useAutosave({
     entryId: entry?.id ?? null,
     day,
     version: entry?.version ?? 0,
     draftKey,
-    getPayload: () => ({ content: editorRef.current?.getJSON() ?? EMPTY_DOC }),
+    getPayload: () => ({
+      content: editorRef.current?.getJSON() ?? EMPTY_DOC,
+      tags: tagsRef.current.map(t => t.name),
+    }),
     onCreated,
+    onSaved: e => setTags(e.tags),
   })
 
   const editor = useEditor({
-    extensions: buildExtensions({}),
+    extensions: buildExtensions({
+      onTag: name => {
+        if (!tagsRef.current.some(t => t.name === name)) {
+          setTags([...tagsRef.current, { name }])
+          autosave.schedule()
+        }
+      },
+    }),
     content: initialContent,
     onUpdate: () => autosave.schedule(),
   })
@@ -54,6 +70,17 @@ export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove }
     <article className="entry-card" data-entry-id={id ?? ''}>
       <div className="entry-head">
         <span className="entry-time">{entry ? entry.created_at.slice(11, 16) : ''}</span>
+        <span className="entry-tags">
+          {tags.map(t => (
+            <span key={t.name} className="chip" style={{ borderColor: t.color }}>
+              <i style={{ background: t.color ?? 'var(--muted)' }} />
+              <button className="chip-name" onClick={() => t.id && onTagClick?.(t.id)}>{t.name}</button>
+              <button className="chip-x" title="移除标签" onClick={() => {
+                setTags(tagsRef.current.filter(x => x.name !== t.name)); autosave.schedule()
+              }}>×</button>
+            </span>
+          ))}
+        </span>
         <span className="entry-actions">
           {id && onMove && <>
             <button className="icon-btn" title="上移" onClick={() => onMove(id, -1)}>↑</button>

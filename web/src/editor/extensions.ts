@@ -11,12 +11,14 @@ import TableCell from '@tiptap/extension-table-cell'
 import Mathematics from '@tiptap/extension-mathematics'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { common, createLowlight } from 'lowlight'
+import { Hashtag } from './Hashtag'
 import 'katex/dist/katex.min.css'
 
 const lowlight = createLowlight(common)
 
 export interface ExtensionOpts {
   placeholder?: string
+  onTag?: (name: string) => void
 }
 
 // 后续任务在此追加：Hashtag(T12)、ResizableImage(T15)、Citation(T16)、HtmlEmbed+pasteRules(T17)、Mermaid(T18)
@@ -34,5 +36,6 @@ export function buildExtensions(opts: ExtensionOpts) {
     TableHeader,
     TableCell,
     Mathematics,
+    ...(opts.onTag ? [Hashtag(opts.onTag)] : []),
   ]
 }

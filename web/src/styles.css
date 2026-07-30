@@ -146,3 +146,31 @@ body {
   border-radius: 20px; padding: 8px 16px; cursor: pointer; box-shadow: var(--shadow);
   font-size: 13px;
 }
+
+/* ---------- 边栏与标签 ---------- */
+.sidebar {
+  width: 200px; border-right: 1px solid var(--border); padding: 10px 8px;
+  overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px;
+}
+.sidebar.collapsed { width: 36px; align-items: center; }
+.side-head { display: flex; justify-content: space-between; align-items: center; }
+.side-item {
+  display: flex; align-items: center; border-radius: 8px; font-size: 14px;
+  color: var(--fg); background: none; border: none; text-align: left; width: 100%;
+}
+.side-item.on { background: var(--border); }
+.side-name {
+  flex: 1; display: flex; align-items: center; gap: 8px; padding: 6px 10px;
+  background: none; border: none; color: inherit; font-size: 14px; cursor: pointer; text-align: left;
+}
+.side-name i, .chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.side-archive { opacity: 0; }
+.side-item:hover .side-archive { opacity: 1; }
+.entry-tags { display: inline-flex; gap: 6px; flex-wrap: wrap; margin-left: 10px; flex: 1; }
+.chip {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 12px;
+  border: 1px solid var(--border); border-radius: 10px; padding: 0 4px 0 6px;
+}
+.chip-name { border: none; background: none; color: var(--fg); cursor: pointer; font-size: 12px; padding: 1px 0; }
+.chip-x { border: none; background: none; color: var(--muted); cursor: pointer; padding: 0 2px; }
+.chip-x:hover { color: var(--danger); }
