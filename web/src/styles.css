@@ -1,0 +1,58 @@
+:root {
+  --bg: #faf9f6; --fg: #1a1a18; --muted: #8a877e; --card: #ffffff;
+  --border: #e8e5dd; --accent: #4a7dbd; --danger: #c04d3f;
+  --shadow: 0 1px 3px rgba(30, 25, 10, 0.06);
+  --serif: "Iowan Old Style", "Source Han Serif SC", Georgia, "Songti SC", serif;
+  --sans: -apple-system, "PingFang SC", "Source Han Sans SC", "Segoe UI", "Microsoft YaHei", sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+}
+[data-theme="dark"] {
+  --bg: #191917; --fg: #e6e4de; --muted: #85817a; --card: #22221f;
+  --border: #33322d; --accent: #7aa5d8; --danger: #d97b6c;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #191917; --fg: #e6e4de; --muted: #85817a; --card: #22221f;
+    --border: #33322d; --accent: #7aa5d8; --danger: #d97b6c;
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans); font-size: 16px; line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app { display: flex; flex-direction: column; height: 100%; }
+.topbar {
+  display: flex; align-items: center; justify-content: flex-end; gap: 12px;
+  padding: 8px 16px; border-bottom: 1px solid var(--border);
+}
+.main { flex: 1; display: flex; min-height: 0; }
+
+.save-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; transition: background 0.3s; }
+.save-saved { background: #7bb26a; }
+.save-saving { background: #d9a13b; }
+.save-offline { background: var(--muted); }
+.save-conflict { background: var(--danger); }
+
+.login-wrap { height: 100%; display: grid; place-items: center; }
+.login-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+  padding: 36px 40px; display: flex; flex-direction: column; gap: 14px;
+  width: min(320px, 90vw); box-shadow: var(--shadow);
+}
+.login-card h1 { margin: 0 0 6px; font-family: var(--serif); font-size: 26px; text-align: center; }
+.login-card input {
+  font-size: 16px; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--bg); color: var(--fg);
+}
+.login-card button {
+  font-size: 15px; padding: 9px; border: none; border-radius: 8px;
+  background: var(--accent); color: #fff; cursor: pointer;
+}
+.login-err { color: var(--danger); margin: 0; font-size: 13px; }
