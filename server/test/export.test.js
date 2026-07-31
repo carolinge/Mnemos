@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { pmToMarkdown } from '../src/export.js'
+import { pmToMarkdown, buildFullMarkdown, buildMonthlyMarkdown } from '../src/export.js'
+import { parseNotesMarkdown } from '../src/importMd.js'
 import { createDb } from '../src/db.js'
 import { createApp } from '../src/app.js'
 
@@ -88,5 +89,87 @@ describe('GET /api/export', () => {
     const buf = Buffer.from(await res.arrayBuffer())
     expect(buf.length).toBeGreaterThan(100)
     expect(buf.subarray(0, 2).toString()).toBe('PK')
+  })
+})
+
+describe('导出格式：整份 / 按月 / 往返', () => {
+  function seededDb() {
+    const db = createDb(':memory:')
+    const app = createApp({ db, imagesDir: '/tmp/img-test', password: 'pw' })
+    return { db, app }
+  }
+  const doc2 = text => ({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] })
+
+  async function seed(app, entries, notes = {}) {
+    const login = await app.request('/api/auth', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'pw' }),
+    })
+    const cookie = login.headers.get('set-cookie').split(';')[0]
+    const H = { 'Content-Type': 'application/json', Cookie: cookie }
+    for (const [day, task, text] of entries) {
+      await app.request('/api/entries', {
+        method: 'POST', headers: H, body: JSON.stringify({ day, task, content: doc2(text) }),
+      })
+    }
+    for (const [day, text] of Object.entries(notes)) {
+      await app.request(`/api/day-notes/${day}`, { method: 'PUT', headers: H, body: JSON.stringify({ text }) })
+    }
+    return cookie
+  }
+
+  it('整份 Markdown：年份 H1、日期 H5 带 span id、任务 font 标记', async () => {
+    const { db, app } = seededDb()
+    await seed(app, [
+      ['2025-12-20', 'PH', '年底的记录'],
+      ['2026-03-12', 'talk', '原来有这么多人做 condensate'],
+      ['2026-03-12', 'SAM', '调了一下密度'],
+    ], { '2026-03-12': '今天注意力堪比大象' })
+
+    const md = buildFullMarkdown(db)
+    expect(md).toContain('# 2025')
+    expect(md).toContain('# 2026')
+    expect(md).toContain('##### <span id="251220">Dec 20<sup>th</sup></span>')
+    expect(md).toContain('##### <span id="260312">Mar 12<sup>th</sup></span>')
+    expect(md).toMatch(/<font color=#[0-9a-f]{6}>talk<\/font>/i)
+    expect(md).toContain('今天注意力堪比大象')
+    // 年份顺序：2025 在 2026 之前
+    expect(md.indexOf('# 2025')).toBeLessThan(md.indexOf('# 2026'))
+    // 同一天两张卡片都在
+    expect(md).toContain('原来有这么多人做 condensate')
+    expect(md).toContain('调了一下密度')
+  })
+
+  it('按月拆分：每月一份，键为 YYYY-MM', async () => {
+    const { db, app } = seededDb()
+    await seed(app, [
+      ['2026-06-02', 'FIB', '六月的事'],
+      ['2026-07-14', 'FIB', '七月的事'],
+      ['2026-07-26', 'PH', '七月另一件'],
+    ])
+    const chunks = buildMonthlyMarkdown(db)
+    expect([...chunks.keys()].sort()).toEqual(['2026-06', '2026-07'])
+    expect(chunks.get('2026-06')).toContain('六月的事')
+    expect(chunks.get('2026-06')).not.toContain('七月的事')
+    expect(chunks.get('2026-07')).toContain('七月的事')
+    expect(chunks.get('2026-07')).toContain('七月另一件')
+  })
+
+  it('往返一致：导出的 Markdown 能被解析器原样读回', async () => {
+    const { db, app } = seededDb()
+    await seed(app, [
+      ['2026-03-12', 'talk', '第一条记录'],
+      ['2026-03-12', 'PH', '第二条记录'],
+      ['2026-05-08', 'DEN', '另一天的记录'],
+    ], { '2026-05-08': '碎碎念一句' })
+
+    const md = buildFullMarkdown(db)
+    const back = parseNotesMarkdown(md)
+    expect(back.warnings).toEqual([])
+    expect(back.entries.map(e => [e.day, e.task])).toEqual([
+      ['2026-03-12', 'talk'], ['2026-03-12', 'PH'], ['2026-05-08', 'DEN'],
+    ])
+    expect(back.asides).toEqual([{ day: '2026-05-08', text: '碎碎念一句' }])
+    expect(back.entries[0].markdown).toContain('第一条记录')
   })
 })

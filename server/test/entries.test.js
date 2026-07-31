@@ -28,7 +28,7 @@ describe('entries CRUD', () => {
     expect(a.day).toBe('2026-07-01')
     expect(b.position).toBe(a.position + 1)
     expect(a.version).toBe(0)
-    expect(a.tags).toEqual([])
+    expect(a.task).toBeNull()
   })
 
   it('PATCH 保存内容：text 被抽取、version 自增', async () => {
@@ -60,28 +60,56 @@ describe('entries CRUD', () => {
     expect(j.content).toBeTruthy()
   })
 
-  it('tags：即建即打标、复用同名项目、可移除', async () => {
-    const e = await createEntry({ day: '2026-07-01' })
-    let res = await app.request(`/api/entries/${e.id}`, {
-      method: 'PATCH', headers: H(),
-      body: JSON.stringify({ tags: ['钙钛矿', '综述'], version: 0 }),
+  it('task：写名字即建即归属、同名复用同一任务、可改可清空', async () => {
+    // 创建时直接带任务名
+    const a = await createEntry({ day: '2026-07-01', task: 'PH' })
+    expect(a.task).toMatchObject({ name: 'PH' })
+    expect(a.task.color).toMatch(/^#[0-9a-f]{6}$/i)
+
+    // 另一条目写同名 → 复用同一任务 id，不新建
+    const b = await createEntry({ day: '2026-07-02', task: 'PH' })
+    expect(b.task.id).toBe(a.task.id)
+
+    // 传 id 也认
+    const c2 = await createEntry({ day: '2026-07-03', task: a.task.id })
+    expect(c2.task.id).toBe(a.task.id)
+
+    // PATCH 改任务
+    let res = await app.request(`/api/entries/${a.id}`, {
+      method: 'PATCH', headers: H(), body: JSON.stringify({ task: 'SAM', version: 0 }),
     })
     let j = await res.json()
-    expect(j.tags.map(t => t.name).sort()).toEqual(['综述', '钙钛矿'].sort())
-    const first = j.tags.find(t => t.name === '钙钛矿')
-    // 第二个条目复用同名项目（同 id）
-    const e2 = await createEntry({ day: '2026-07-02' })
-    res = await app.request(`/api/entries/${e2.id}`, {
-      method: 'PATCH', headers: H(), body: JSON.stringify({ tags: ['钙钛矿'], version: 0 }),
+    expect(j.task.name).toBe('SAM')
+
+    // PATCH 不传 task → 保持不变
+    res = await app.request(`/api/entries/${a.id}`, {
+      method: 'PATCH', headers: H(), body: JSON.stringify({ content: doc('改正文'), version: 1 }),
     })
     j = await res.json()
-    expect(j.tags[0].id).toBe(first.id)
-    // 移除标签
-    res = await app.request(`/api/entries/${e.id}`, {
-      method: 'PATCH', headers: H(), body: JSON.stringify({ tags: ['综述'], version: 1 }),
+    expect(j.task.name).toBe('SAM')
+
+    // 显式传 null → 清空
+    res = await app.request(`/api/entries/${a.id}`, {
+      method: 'PATCH', headers: H(), body: JSON.stringify({ task: null, version: 2 }),
     })
     j = await res.json()
-    expect(j.tags.map(t => t.name)).toEqual(['综述'])
+    expect(j.task).toBeNull()
+  })
+
+  it('每天碎碎念：PUT 保存、GET 读回、随时间流一起返回', async () => {
+    await createEntry({ day: '2026-07-01', task: 'PH' })
+    const put = await app.request('/api/day-notes/2026-07-01', {
+      method: 'PUT', headers: H(), body: JSON.stringify({ text: '今天注意力堪比一头成年大象' }),
+    })
+    expect(put.status).toBe(200)
+    const got = await (await app.request('/api/day-notes/2026-07-01', { headers: H() })).json()
+    expect(got.text).toContain('成年大象')
+    // 时间流里带出来
+    const list = await (await app.request('/api/entries?limit=10', { headers: H() })).json()
+    expect(list.days.find(d => d.day === '2026-07-01').note).toContain('成年大象')
+    // 没写过碎碎念的天返回空串
+    const empty = await (await app.request('/api/day-notes/2020-01-01', { headers: H() })).json()
+    expect(empty.text).toBe('')
   })
 
   it('DELETE 软删除：列表不再返回', async () => {
@@ -94,10 +122,7 @@ describe('entries CRUD', () => {
   })
 
   it('GET /api/projects 返回项目；PATCH 可改色/归档', async () => {
-    const e = await createEntry({})
-    await app.request(`/api/entries/${e.id}`, {
-      method: 'PATCH', headers: H(), body: JSON.stringify({ tags: ['纳米线'], version: 0 }),
-    })
+    await createEntry({ task: '纳米线' })
     let res = await app.request('/api/projects', { headers: H() })
     const projects = await res.json()
     expect(projects.length).toBe(1)

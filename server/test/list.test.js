@@ -14,9 +14,9 @@ beforeEach(async () => {
 const H = () => ({ 'Content-Type': 'application/json', Cookie: cookie })
 const doc = text => ({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] })
 
-async function seed(day, text, tags = []) {
+async function seed(day, text, task = null) {
   const res = await app.request('/api/entries', {
-    method: 'POST', headers: H(), body: JSON.stringify({ day, content: doc(text), tags }),
+    method: 'POST', headers: H(), body: JSON.stringify({ day, content: doc(text), task }),
   })
   return res.json()
 }
@@ -41,7 +41,7 @@ describe('entries list', () => {
   })
 
   it('project 过滤只返回该项目条目所在的天', async () => {
-    await seed('2026-07-01', 'A 相关', ['A'])
+    await seed('2026-07-01', 'A 相关', 'A')
     await seed('2026-07-02', '无关')
     const projects = await (await app.request('/api/projects', { headers: H() })).json()
     const res = await app.request(`/api/entries?project=${projects[0].id}`, { headers: H() })

@@ -12,30 +12,22 @@ function hashCode(s) {
   return h
 }
 
-export function upsertTags(db, entryId, names) {
-  db.prepare('DELETE FROM entry_projects WHERE entry_id = ?').run(entryId)
-  const out = []
-  const seen = new Set()
-  for (const raw of names || []) {
-    const name = String(raw).trim().replace(/^#/, '')
-    if (!name || seen.has(name)) continue
-    seen.add(name)
-    let p = db.prepare('SELECT id, name, color FROM projects WHERE name = ?').get(name)
-    if (!p) {
-      p = { id: crypto.randomUUID(), name, color: PALETTE[hashCode(name) % PALETTE.length] }
-      db.prepare('INSERT INTO projects(id, name, color) VALUES (?, ?, ?)').run(p.id, p.name, p.color)
-    }
-    db.prepare('INSERT OR IGNORE INTO entry_projects(entry_id, project_id) VALUES (?, ?)').run(entryId, p.id)
-    out.push(p)
-  }
-  return out
+// 按名字取任务；不存在则新建（配色按名字哈希，稳定不随机）
+export function resolveTask(db, nameOrId) {
+  const raw = String(nameOrId ?? '').trim().replace(/^#/, '')
+  if (!raw) return null
+  const byId = db.prepare('SELECT id, name, color, archived FROM projects WHERE id = ?').get(raw)
+  if (byId) return byId
+  const byName = db.prepare('SELECT id, name, color, archived FROM projects WHERE name = ?').get(raw)
+  if (byName) return byName
+  const p = { id: crypto.randomUUID(), name: raw, color: PALETTE[hashCode(raw) % PALETTE.length] }
+  db.prepare('INSERT INTO projects(id, name, color) VALUES (?, ?, ?)').run(p.id, p.name, p.color)
+  return { ...p, archived: 0 }
 }
 
-export function tagsOf(db, entryId) {
-  return db.prepare(`
-    SELECT p.id, p.name, p.color FROM entry_projects ep
-    JOIN projects p ON p.id = ep.project_id WHERE ep.entry_id = ? ORDER BY p.name
-  `).all(entryId)
+export function taskOf(db, taskId) {
+  if (!taskId) return null
+  return db.prepare('SELECT id, name, color, archived FROM projects WHERE id = ?').get(taskId) ?? null
 }
 
 function rowToEntry(db, row) {
@@ -43,7 +35,7 @@ function rowToEntry(db, row) {
     id: row.id, day: row.day, position: row.position,
     content: JSON.parse(row.content), version: row.version,
     created_at: row.created_at, updated_at: row.updated_at,
-    text: row.text, tags: tagsOf(db, row.id),
+    text: row.text, task: taskOf(db, row.task_id),
   }
 }
 
@@ -60,7 +52,7 @@ export function entriesRoutes(app, db) {
       return c.json(groupDays(db, rows))
     }
 
-    const joins = project ? 'JOIN entry_projects ep ON ep.entry_id = e.id AND ep.project_id = ?' : ''
+    const taskCond = project ? 'AND e.task_id = ?' : ''
     const p1 = project ? [project] : []
     let dayCond = ''
     if (before) { dayCond = 'AND e.day < ?'; p1.push(before) }
@@ -68,16 +60,16 @@ export function entriesRoutes(app, db) {
     p1.push(limit)
     const order = after ? 'ASC' : 'DESC'
     const days = db.prepare(`
-      SELECT DISTINCT e.day FROM entries e ${joins}
-      WHERE e.deleted_at IS NULL ${dayCond} ORDER BY e.day ${order} LIMIT ?
+      SELECT DISTINCT e.day FROM entries e
+      WHERE e.deleted_at IS NULL ${taskCond} ${dayCond} ORDER BY e.day ${order} LIMIT ?
     `).all(...p1).map(r => r.day)
     days.sort().reverse()   // 统一为降序输出
     const rows = days.length ? db.prepare(`
-      SELECT DISTINCT e.* FROM entries e ${joins}
-      WHERE e.deleted_at IS NULL AND e.day IN (${days.map(() => '?').join(',')})
+      SELECT e.* FROM entries e
+      WHERE e.deleted_at IS NULL ${taskCond} AND e.day IN (${days.map(() => '?').join(',')})
       ORDER BY e.day DESC, e.position ASC, e.created_at ASC
     `).all(...(project ? [project] : []), ...days) : []
-    return c.json(groupDays(db, rows))
+    return c.json(groupDays(db, rows, days))
   })
 
   app.get('/api/days', c => {
@@ -86,15 +78,31 @@ export function entriesRoutes(app, db) {
     `).all())
   })
 
+  // 每日碎碎念：日期标头下的小字，默认隐藏，双击日期展开
+  app.get('/api/day-notes/:day', c => {
+    const row = db.prepare('SELECT day, text FROM day_notes WHERE day = ?').get(c.req.param('day'))
+    return c.json(row ?? { day: c.req.param('day'), text: '' })
+  })
+
+  app.put('/api/day-notes/:day', async c => {
+    const day = c.req.param('day')
+    const body = await c.req.json().catch(() => ({}))
+    const text = String(body.text ?? '')
+    db.prepare(`INSERT INTO day_notes(day, text, updated_at) VALUES (?, ?, ?)
+                ON CONFLICT(day) DO UPDATE SET text = excluded.text, updated_at = excluded.updated_at`)
+      .run(day, text, now())
+    return c.json({ day, text })
+  })
+
   app.post('/api/entries', async c => {
     const body = await c.req.json().catch(() => ({}))
     const id = crypto.randomUUID()
     const day = body.day || today()
     const pos = db.prepare('SELECT COALESCE(MAX(position), 0) + 1 AS p FROM entries WHERE day = ?').get(day).p
     const content = body.content || { type: 'doc', content: [] }
-    db.prepare(`INSERT INTO entries(id, day, position, content, text) VALUES (?, ?, ?, ?, ?)`)
-      .run(id, day, pos, JSON.stringify(content), extractText(content))
-    if (body.tags) upsertTags(db, id, body.tags)
+    const task = body.task !== undefined ? resolveTask(db, body.task) : null
+    db.prepare(`INSERT INTO entries(id, day, position, content, text, task_id) VALUES (?, ?, ?, ?, ?, ?)`)
+      .run(id, day, pos, JSON.stringify(content), extractText(content), task?.id ?? null)
     return c.json(rowToEntry(db, db.prepare('SELECT * FROM entries WHERE id = ?').get(id)))
   })
 
@@ -109,10 +117,13 @@ export function entriesRoutes(app, db) {
     const content = body.content !== undefined ? body.content : JSON.parse(row.content)
     const day = body.day !== undefined ? body.day : row.day
     const position = body.position !== undefined ? body.position : row.position
-    db.prepare(`UPDATE entries SET content = ?, text = ?, day = ?, position = ?,
+    // task: 传字符串或 id 则设置/新建，传 null 显式清空，不传则保持原样
+    const taskId = body.task === undefined
+      ? row.task_id
+      : (body.task === null ? null : resolveTask(db, body.task)?.id ?? null)
+    db.prepare(`UPDATE entries SET content = ?, text = ?, day = ?, position = ?, task_id = ?,
                 version = version + 1, updated_at = ? WHERE id = ?`)
-      .run(JSON.stringify(content), extractText(content), day, position, now(), id)
-    if (body.tags !== undefined) upsertTags(db, id, body.tags)
+      .run(JSON.stringify(content), extractText(content), day, position, taskId, now(), id)
     return c.json(rowToEntry(db, db.prepare('SELECT * FROM entries WHERE id = ?').get(id)))
   })
 
@@ -158,13 +169,20 @@ export function searchEntries(db, q, limit = 100) {
   `).all(like, limit)
 }
 
-function groupDays(db, rows) {
+// emptyDays：该天在筛选条件下存在但没有条目（例如只有碎碎念），仍需出现在时间流里
+function groupDays(db, rows, dayList = null) {
   const byDay = new Map()
+  for (const d of dayList ?? []) byDay.set(d, [])
   for (const r of rows) {
     if (!byDay.has(r.day)) byDay.set(r.day, [])
     byDay.get(r.day).push(rowToEntry(db, r))
   }
-  const days = [...byDay.entries()].map(([day, entries]) => ({ day, entries }))
+  const noteRows = byDay.size
+    ? db.prepare(`SELECT day, text FROM day_notes WHERE day IN (${[...byDay.keys()].map(() => '?').join(',')})`)
+        .all(...byDay.keys())
+    : []
+  const notes = new Map(noteRows.map(n => [n.day, n.text]))
+  const days = [...byDay.entries()].map(([day, entries]) => ({ day, entries, note: notes.get(day) ?? '' }))
     .sort((a, b) => b.day.localeCompare(a.day))
   return {
     days,

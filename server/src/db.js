@@ -71,4 +71,26 @@ function migrate(db) {
     `)
     db.pragma('user_version = 1')
   }
+
+  // v2：卡片归属单一任务（task_id），另有按天的碎碎念
+  if (db.pragma('user_version', { simple: true }) < 2) {
+    db.exec(`
+      ALTER TABLE entries ADD COLUMN task_id TEXT REFERENCES projects(id);
+      CREATE INDEX idx_entries_task ON entries(task_id);
+      CREATE TABLE day_notes(
+        day TEXT PRIMARY KEY,
+        text TEXT NOT NULL DEFAULT '',
+        updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+      );
+    `)
+    // 旧的多标签数据迁移：每条取第一个标签作为其任务
+    db.exec(`
+      UPDATE entries SET task_id = (
+        SELECT ep.project_id FROM entry_projects ep
+        WHERE ep.entry_id = entries.id
+        ORDER BY ep.project_id LIMIT 1
+      ) WHERE task_id IS NULL;
+    `)
+    db.pragma('user_version = 2')
+  }
 }

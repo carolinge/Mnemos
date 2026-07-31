@@ -1,7 +1,84 @@
 import fs from 'node:fs'
 import { Readable } from 'node:stream'
 import archiver from 'archiver'
-import { tagsOf } from './entries.js'
+import { taskOf } from './entries.js'
+
+const MONTH_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const TASK_COLOR_FALLBACK = '#3388dd'
+
+function ordinal(n) {
+  if (n >= 11 && n <= 13) return 'th'
+  return { 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] ?? 'th'
+}
+
+// 还原用户原本的 Typora 写法：##### <span id="YYMMDD">Mar 12<sup>th</sup></span>
+export function formatDayHeading(day) {
+  const [y, m, d] = day.split('-').map(Number)
+  const id = `${String(y).slice(2)}${String(m).padStart(2, '0')}${String(d).padStart(2, '0')}`
+  return `##### <span id="${id}">${MONTH_EN[m - 1]} ${String(d).padStart(2, '0')}<sup>${ordinal(d)}</sup></span>`
+}
+
+export function formatTaskHeading(task) {
+  if (!task) return ''
+  return `<font color=${task.color || TASK_COLOR_FALLBACK}>${task.name}</font>`
+}
+
+// 全库 → 单份 Markdown（年份 H1 可折叠、日期 H5、任务 font 标记），与旧笔记格式往返一致
+export function buildFullMarkdown(db, opts = {}) {
+  const imgPrefix = opts.imgPrefix ?? 'images/'
+  const onEmbed = opts.onEmbed ?? (() => null)
+  const rows = db.prepare(
+    `SELECT * FROM entries WHERE deleted_at IS NULL ORDER BY day ASC, position ASC, created_at ASC`).all()
+  const notes = new Map(db.prepare('SELECT day, text FROM day_notes').all().map(n => [n.day, n.text]))
+
+  const byDay = new Map()
+  for (const r of rows) {
+    if (!byDay.has(r.day)) byDay.set(r.day, [])
+    byDay.get(r.day).push(r)
+  }
+  for (const day of notes.keys()) if (!byDay.has(day)) byDay.set(day, [])
+  const days = [...byDay.keys()].sort()
+
+  let out = ''
+  let curYear = null
+  for (const day of days) {
+    const year = day.slice(0, 4)
+    if (year !== curYear) {
+      out += `${curYear ? '\n' : ''}# ${year}\n\n`
+      curYear = year
+    }
+    out += `${formatDayHeading(day)}\n\n`
+    const note = (notes.get(day) ?? '').trim()
+    if (note) out += `${note}\n\n`
+    for (const r of byDay.get(day)) {
+      const heading = formatTaskHeading(taskOf(db, r.task_id))
+      if (heading) out += `${heading}\n\n`
+      out += pmToMarkdown(JSON.parse(r.content), { imgPrefix, onEmbed })
+      out += '\n'
+    }
+  }
+  return out.replace(/\n{4,}/g, '\n\n\n')
+}
+
+// 按月切分：{'2026-07': '...md 内容...'}
+export function buildMonthlyMarkdown(db, opts = {}) {
+  const full = buildFullMarkdown(db, opts)
+  const chunks = new Map()
+  const dayRe = /^##### <span id="(\d{6})"/
+  let cur = null
+  let buf = []
+  const flush = () => { if (cur && buf.length) chunks.set(cur, (chunks.get(cur) ?? '') + buf.join('\n') + '\n') ; buf = [] }
+  for (const line of full.split('\n')) {
+    const m = line.match(dayRe)
+    if (m) {
+      const month = `20${m[1].slice(0, 2)}-${m[1].slice(2, 4)}`
+      if (month !== cur) { flush(); cur = month }
+    }
+    if (cur) buf.push(line)
+  }
+  flush()
+  return chunks
+}
 
 // opts: { imgPrefix?: '/images/' 重写前缀, onEmbed?: (html)=>相对路径 }
 export function pmToMarkdown(doc, opts = {}) {
@@ -92,39 +169,58 @@ function citeMd(n) {
 }
 
 export function exportRoutes(app, db, imagesDir) {
+  // format=full（默认，单份大 Markdown）| monthly（按月拆分）| print（可打印成 PDF 的 HTML）
   app.get('/api/export', c => {
-    const rows = db.prepare(`SELECT * FROM entries WHERE deleted_at IS NULL ORDER BY day ASC, position ASC`).all()
+    const format = c.req.query('format') || 'full'
+
+    if (format === 'print') {
+      const md = buildFullMarkdown(db, { imgPrefix: '/images/' })
+      return c.html(printableHtml(md))
+    }
+
     const archive = archiver('zip')
-    const byDay = new Map()
-    for (const r of rows) {
-      if (!byDay.has(r.day)) byDay.set(r.day, [])
-      byDay.get(r.day).push(r)
-    }
     let embedSeq = 0
-    for (const [day, entries] of byDay) {
-      let md = `# ${day}\n\n`
-      for (const r of entries) {
-        const tags = tagsOf(db, r.id).map(t => `#${t.name}`).join(' ')
-        md += `## ${r.created_at.slice(11, 16)}${tags ? ' ' + tags : ''}\n\n`
-        md += pmToMarkdown(JSON.parse(r.content), {
-          imgPrefix: '../../images/',
-          onEmbed: html => {
-            const p = `embeds/${day}-${++embedSeq}.html`
-            archive.append(html, { name: p })
-            return `../../${p}`
-          },
-        })
-        md += '\n'
-      }
-      archive.append(md, { name: `notes/${day.slice(0, 4)}/${day}.md` })
+    const onEmbed = html => {
+      const p = `embeds/embed-${++embedSeq}.html`
+      archive.append(html, { name: p })
+      return p
     }
+
+    if (format === 'monthly') {
+      const chunks = buildMonthlyMarkdown(db, { imgPrefix: '../images/', onEmbed })
+      for (const [month, text] of chunks) {
+        archive.append(text, { name: `notes/${month}.md` })
+      }
+    } else {
+      archive.append(buildFullMarkdown(db, { imgPrefix: 'images/', onEmbed }), { name: 'notes.md' })
+    }
+
     if (fs.existsSync(imagesDir)) archive.directory(imagesDir, 'images')
     archive.finalize()
     return new Response(Readable.toWeb(archive), {
       headers: {
         'Content-Type': 'application/zip',
-        'Content-Disposition': 'attachment; filename="parchment-export.zip"',
+        'Content-Disposition': `attachment; filename="parchment-${format}.zip"`,
       },
     })
   })
+}
+
+// 浏览器打开后 Ctrl+P 即可存为 PDF；不引入 PDF 生成依赖，保持轻量
+function printableHtml(markdown) {
+  const esc = s => s.replace(/[&<>]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch]))
+  return `<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<title>Parchment 笔记</title>
+<style>
+  body { font: 15px/1.75 -apple-system, "PingFang SC", "Source Han Sans SC", sans-serif;
+         max-width: 760px; margin: 40px auto; padding: 0 24px; color: #1a1a18; }
+  h1 { font-size: 26px; border-bottom: 2px solid #ddd; padding-bottom: 6px; margin-top: 2em;
+       page-break-before: always; }
+  h1:first-of-type { page-break-before: avoid; }
+  pre { white-space: pre-wrap; word-wrap: break-word; font: 13px/1.6 ui-monospace, Menlo, monospace; }
+  @media print { body { margin: 0; max-width: none; } }
+</style>
+<p style="color:#888;font-size:13px">用浏览器的「打印 → 存为 PDF」即可导出。</p>
+<pre>${esc(markdown)}</pre>
+</head></html>`
 }
