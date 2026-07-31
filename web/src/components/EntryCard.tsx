@@ -123,7 +123,13 @@ export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove, 
             }
             input.click()
           }}>图片</button>
-          {/* 引用(T16)、嵌入(T17)、流程图(T18) 按钮在后续任务追加 */}
+          <button onClick={() => {
+            const url = window.prompt('文献链接（DOI / arXiv / PubMed）')
+            if (url) {
+              import('../editor/pasteRules').then(({ insertCitation }) => insertCitation(editor.view, url.trim()))
+            }
+          }}>引用</button>
+          {/* 嵌入(T17)、流程图(T18) 按钮在后续任务追加 */}
         </div>
       </FloatingMenu>}
       <EditorContent editor={editor} />

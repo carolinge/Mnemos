@@ -13,6 +13,7 @@ import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { common, createLowlight } from 'lowlight'
 import { Hashtag } from './Hashtag'
 import { ResizableImage } from './ResizableImage'
+import { CitationNode } from './CitationNode'
 import { PasteRules } from './pasteRules'
 import 'katex/dist/katex.min.css'
 
@@ -38,6 +39,7 @@ export function buildExtensions(opts: ExtensionOpts) {
     TableHeader,
     TableCell,
     Mathematics,
+    CitationNode,
     ResizableImage,
     PasteRules,
     ...(opts.onTag ? [Hashtag(opts.onTag)] : []),

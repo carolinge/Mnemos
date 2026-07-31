@@ -1,7 +1,9 @@
 import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
-import { uploadImage } from '../api'
+import { api, uploadImage } from '../api'
+import { isCitationUrl } from '../lib/citePatterns'
+import { applyCitationResult, type CiteResult } from './CitationNode'
 
 export function pickImageFiles(files: File[] | FileList): File[] {
   return Array.from(files).filter(f => f.type.startsWith('image/'))
@@ -19,6 +21,14 @@ async function insertImages(view: EditorView, files: File[]) {
   }
 }
 
+export function insertCitation(view: EditorView, url: string) {
+  const node = view.state.schema.nodes.citation.create({ url, status: 'pending' })
+  view.dispatch(view.state.tr.replaceSelectionWith(node).scrollIntoView())
+  api<CiteResult & { url: string }>('/api/cite', { method: 'POST', body: JSON.stringify({ url }) })
+    .then(r => applyCitationResult(view, url, r))
+    .catch(() => applyCitationResult(view, url, { ok: false }))
+}
+
 export const PasteRules = Extension.create({
   name: 'parchmentPaste',
   addProseMirrorPlugins() {
@@ -28,6 +38,8 @@ export const PasteRules = Extension.create({
         handlePaste: (view, event) => {
           const files = pickImageFiles(event.clipboardData?.files ?? [])
           if (files.length) { void insertImages(view, files); return true }
+          const text = event.clipboardData?.getData('text/plain')?.trim() ?? ''
+          if (text && isCitationUrl(text)) { insertCitation(view, text); return true }
           return false
         },
         handleDrop: (view, event) => {

@@ -249,3 +249,14 @@ body {
   display: grid; place-items: center; cursor: zoom-out;
 }
 .lightbox img { max-width: 94vw; max-height: 94vh; border-radius: 4px; }
+
+/* ---------- 引用卡片 ---------- */
+.cite-card {
+  border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: 8px; padding: 8px 14px; margin: 6px 0;
+  display: flex; flex-direction: column; gap: 2px; background: var(--bg);
+}
+.cite-title { color: var(--fg); font-weight: 600; text-decoration: none; font-size: 14.5px; }
+.cite-title.plain { font-weight: 400; color: var(--accent); word-break: break-all; }
+.cite-title:hover { color: var(--accent); }
+.cite-meta { color: var(--muted); font-size: 12.5px; }
