@@ -1,5 +1,7 @@
 import crypto from 'node:crypto'
 import { extractText } from './text.js'
+import { mdToPm } from './mdToPm.js'
+import { parseNotesMarkdown } from './importMd.js'
 
 const PALETTE = ['#e05252', '#e08d52', '#d9a13b', '#6cae3f', '#3fae8c', '#4a90d9', '#7a6fd9', '#c45fb8']
 
@@ -78,6 +80,17 @@ export function entriesRoutes(app, db) {
     `).all())
   })
 
+  // 导入旧 Typora 日记：body.markdown 为文件全文，dryRun=true 时只返回统计
+  app.post('/api/import', async c => {
+    const body = await c.req.json().catch(() => ({}))
+    if (typeof body.markdown !== 'string' || !body.markdown.trim()) {
+      return c.json({ error: 'missing markdown' }, 400)
+    }
+    const parsed = parseNotesMarkdown(body.markdown, { defaultYear: body.defaultYear })
+    const stats = importParsed(db, parsed, { dryRun: Boolean(body.dryRun) })
+    return c.json({ ...stats, warnings: parsed.warnings, dryRun: Boolean(body.dryRun) })
+  })
+
   // 每日碎碎念：日期标头下的小字，默认隐藏，双击日期展开
   app.get('/api/day-notes/:day', c => {
     const row = db.prepare('SELECT day, text FROM day_notes WHERE day = ?').get(c.req.param('day'))
@@ -148,6 +161,44 @@ export function entriesRoutes(app, db) {
     db.prepare('UPDATE projects SET name = ?, color = ?, archived = ? WHERE id = ?').run(name, color, archived, id)
     return c.json(db.prepare('SELECT * FROM projects WHERE id = ?').get(id))
   })
+}
+
+// 把解析好的旧笔记写入库。dryRun 时只统计不落库，供导入前预览。
+export function importParsed(db, parsed, opts = {}) {
+  const { dryRun = false } = opts
+  const stats = { entries: 0, notes: 0, tasks: new Set(), days: new Set(), skipped: 0 }
+
+  const run = () => {
+    for (const e of parsed.entries) {
+      if (!e.markdown?.trim() && !e.task) { stats.skipped++; continue }
+      stats.days.add(e.day)
+      if (e.task) stats.tasks.add(e.task)
+      stats.entries++
+      if (dryRun) continue
+      const content = mdToPm(e.markdown)
+      const task = e.task ? resolveTask(db, e.task) : null
+      db.prepare(`INSERT INTO entries(id, day, position, content, text, task_id) VALUES (?, ?, ?, ?, ?, ?)`)
+        .run(crypto.randomUUID(), e.day, e.position ?? 0,
+             JSON.stringify(content), extractText(content), task?.id ?? null)
+    }
+    for (const n of parsed.asides ?? []) {
+      if (!n.text?.trim()) continue
+      stats.notes++
+      if (dryRun) continue
+      db.prepare(`INSERT INTO day_notes(day, text, updated_at) VALUES (?, ?, ?)
+                  ON CONFLICT(day) DO UPDATE SET text = excluded.text, updated_at = excluded.updated_at`)
+        .run(n.day, n.text, now())
+    }
+  }
+
+  // 整批要么全进要么全不进，避免半截数据
+  if (dryRun) run()
+  else db.transaction(run)()
+
+  return {
+    entries: stats.entries, notes: stats.notes, skipped: stats.skipped,
+    tasks: [...stats.tasks], days: stats.days.size,
+  }
 }
 
 export function searchEntries(db, q, limit = 100) {
