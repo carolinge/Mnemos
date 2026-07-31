@@ -9,14 +9,13 @@ import type { Project } from './Sidebar'
 const EMPTY_DOC = { type: 'doc', content: [] }
 const COLLAPSED_MAX_PX = 140   // 折叠态约四行，超出显示「展开」
 
-export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, onMove, onTaskClick }: {
+export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, onTaskClick }: {
   entry: EntryData | null      // null = 尚未落库的新条目
   day: string
   draftKey: string
   tasks: Project[]
   onCreated?: (e: EntryData) => void
   onDeleted?: (id: string) => void
-  onMove?: (id: string, dir: -1 | 1) => void
   onTaskClick?: (taskId: string) => void
 }) {
   // 断网草稿优先于服务器内容
@@ -100,11 +99,7 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
           )}
         </span>
         <span className="entry-actions">
-          {id && onMove && <>
-            <button className="icon-btn" title="上移" onClick={() => onMove(id, -1)}>↑</button>
-            <button className="icon-btn" title="下移" onClick={() => onMove(id, 1)}>↓</button>
-          </>}
-          {id && <button className="icon-btn" title="删除" onClick={remove}>×</button>}
+          {id && <button className="icon-btn" title="删除这张卡片" onClick={remove}>×</button>}
         </span>
       </div>
       {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 120 }}>

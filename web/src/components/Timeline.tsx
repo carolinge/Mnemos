@@ -2,15 +2,15 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { api } from '../api'
 import { todayStr } from '../lib/groupDays'
 import { useTimeline } from '../hooks/useTimeline'
-import type { EntryData } from '../hooks/useAutosave'
 import type { Project } from './Sidebar'
 import { EntryCard } from './EntryCard'
 import { DayHeader } from './DayHeader'
 
-export function Timeline({ project, anchor, tasks, onExitAnchor, onTaskClick, onTasksChanged }: {
+export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onTaskClick, onTasksChanged }: {
   project: string | null
   anchor: string | null
   tasks: Project[]
+  showAsides: boolean
   onExitAnchor: () => void
   onTaskClick?: (taskId: string) => void
   onTasksChanged?: () => void
@@ -18,7 +18,8 @@ export function Timeline({ project, anchor, tasks, onExitAnchor, onTaskClick, on
   const t = useTimeline(project, anchor)
   const boxRef = useRef<HTMLDivElement>(null)
   const topSentinel = useRef<HTMLDivElement>(null)
-  const [composers, setComposers] = useState<string[]>(() => [crypto.randomUUID()])
+  // 每天各自的「正在撰写」卡片：day → 若干临时 key
+  const [composers, setComposers] = useState<Record<string, string[]>>({})
   const [awayFromBottom, setAway] = useState(false)
   const [foldedYears, setFoldedYears] = useState<Set<string>>(new Set())
   const didInitScroll = useRef(false)
@@ -50,18 +51,18 @@ export function Timeline({ project, anchor, tasks, onExitAnchor, onTaskClick, on
     setAway(el.scrollHeight - el.scrollTop - el.clientHeight > 800 || Boolean(anchor))
   }
 
-  async function move(day: string, id: string, dir: -1 | 1) {
-    const group = t.days.find(d => d.day === day)
-    if (!group) return
-    const i = group.entries.findIndex(e => e.id === id)
-    const j = i + dir
-    if (i < 0 || j < 0 || j >= group.entries.length) return
-    const a = group.entries[i], b = group.entries[j]
-    const ra = await api<EntryData>(`/api/entries/${a.id}`, {
-      method: 'PATCH', body: JSON.stringify({ position: b.position, version: a.version }) })
-    const rb = await api<EntryData>(`/api/entries/${b.id}`, {
-      method: 'PATCH', body: JSON.stringify({ position: a.position, version: b.version }) })
-    t.applyEntry(ra); t.applyEntry(rb)
+  function addComposer(day: string) {
+    setComposers(c => ({ ...c, [day]: [...(c[day] ?? []), crypto.randomUUID()] }))
+  }
+
+  // 新的一天：选个日期，那天就出现一张空卡片等你写（保存后自动排到正确位置）
+  function addDay() {
+    const input = window.prompt('新条目的日期（YYYY-MM-DD）', todayStr())
+    if (!input) return
+    const day = input.trim()
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) { window.alert('日期格式应为 2026-07-31'); return }
+    addComposer(day)
+    if (!t.days.some(d => d.day === day)) t.ensureDay(day)
   }
 
   // 改日期：把这一天的所有卡片搬到新日期
@@ -111,15 +112,21 @@ export function Timeline({ project, anchor, tasks, onExitAnchor, onTaskClick, on
             )}
             {!folded && (
               <section data-day={d.day}>
-                <DayHeader day={d.day} note={d.note ?? ''}
+                <DayHeader day={d.day} note={d.note ?? ''} showAsides={showAsides}
                   onChangeDay={moveDay}
                   onNoteSaved={(day, text) => t.applyNote(day, text)} />
                 <div className="day-cards">
                   {d.entries.map(e => (
                     <EntryCard key={e.id} entry={e} day={d.day} draftKey={e.id} tasks={tasks}
-                      onDeleted={t.removeEntry} onTaskClick={onTaskClick}
-                      onMove={(id, dir) => move(d.day, id, dir)} />
+                      onDeleted={t.removeEntry} onTaskClick={onTaskClick} />
                   ))}
+                  {(composers[d.day] ?? []).map(key => (
+                    <EntryCard key={key} entry={null} day={d.day} draftKey={`new:${key}`} tasks={tasks}
+                      onTaskClick={onTaskClick}
+                      onCreated={() => { t.reload(); onTasksChanged?.() }} />
+                  ))}
+                  <button className="new-entry" title={`在 ${d.day} 下新增一张卡片`}
+                    onClick={() => addComposer(d.day)}>＋ 新条目</button>
                 </div>
               </section>
             )}
@@ -127,20 +134,24 @@ export function Timeline({ project, anchor, tasks, onExitAnchor, onTaskClick, on
         )
       })}
       {t.hasNewer && <button className="load-newer" onClick={() => t.loadNewer()}>加载更新的内容 ↓</button>}
-      {showToday && (
+      {showToday && !hasTodayGroup && (
         <section data-day={today}>
-          {!hasTodayGroup && <DayHeader day={today} note="" onNoteSaved={(day, text) => t.applyNote(day, text)} />}
+          <DayHeader day={today} note="" showAsides={showAsides}
+            onNoteSaved={(day, text) => t.applyNote(day, text)} />
           <div className="day-cards">
-            {composers.map(key => (
+            {(composers[today] ?? []).map(key => (
               <EntryCard key={key} entry={null} day={today} draftKey={`new:${key}`} tasks={tasks}
                 onTaskClick={onTaskClick}
                 onCreated={() => { t.reload(); onTasksChanged?.() }} />
             ))}
+            <button className="new-entry" title="在今天下新增一张卡片"
+              onClick={() => addComposer(today)}>＋ 新条目</button>
           </div>
-          <button className="new-entry" onClick={() => setComposers(c => [...c, crypto.randomUUID()])}>
-            ＋ 新条目
-          </button>
         </section>
+      )}
+      {!project && (
+        <button className="new-day" title="给别的日期新建一张卡片（补以前的笔记）"
+          onClick={addDay}>＋ 新的一天</button>
       )}
       {awayFromBottom && (
         <button className="back-today" onClick={() => {

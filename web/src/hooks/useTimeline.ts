@@ -76,5 +76,15 @@ export function useTimeline(project: string | null, anchor: string | null) {
       .filter(d => d.entries.length > 0))
   }, [])
 
-  return { days, ready, hasOlder, hasNewer, loadOlder, loadNewer, applyEntry, applyNote, removeEntry, reload }
+  // 为还没有任何条目的日期插一个空分组，让它先在时间流里占好位置
+  const ensureDay = useCallback((day: string) => {
+    setDays(cur => cur.some(d => d.day === day)
+      ? cur
+      : [...cur, { day, entries: [] }].sort((a, b) => a.day.localeCompare(b.day)))
+  }, [])
+
+  return {
+    days, ready, hasOlder, hasNewer, loadOlder, loadNewer,
+    applyEntry, applyNote, removeEntry, ensureDay, reload,
+  }
 }

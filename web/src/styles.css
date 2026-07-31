@@ -9,6 +9,8 @@
   --content-max: 100%;
   /* 卡片正文左内边距；日期/年份标头用同一个值对齐左边缘 */
   --card-pad-x: 18px;
+  /* 卡片相对日期标头再往里缩的量（左右各一次，卡片因此更短） */
+  --card-indent: 22px;
 }
 [data-theme="dark"] {
   --bg: #191917; --fg: #e6e4de; --muted: #85817a; --card: #22221f;
@@ -123,7 +125,7 @@ body {
 
 /* ---------- 时间流 ---------- */
 .timeline {
-  flex: 1; overflow-y: auto; padding: 0 20px 40px;
+  flex: 1; overflow-y: auto; padding: 0 36px 40px;
   scroll-behavior: auto; position: relative;
 }
 /* 内容列：唯一的宽度来源。年份标头、日期标头、卡片全部用它，左右边缘对齐。
@@ -460,6 +462,41 @@ html { scrollbar-color: var(--border) transparent; }
 .export-menu a:hover { background: var(--border); }
 .export-menu small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 1px; }
 
-/* 一天内的卡片：一张占满一行，竖向排列，左右边缘与日期标头齐平 */
-.day-cards { display: flex; flex-direction: column; gap: 10px; }
+/* 一天内的卡片：一张一行，整体比日期标头再往里缩一档，右边也收进来 */
+.day-cards {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-left: var(--card-indent);
+  margin-right: var(--card-indent);
+}
 .day-cards > .entry-card { width: 100%; margin: 0; }
+
+/* ---------- 新增按钮与碎碎念开关 ---------- */
+/* 「＋ 新条目」跟卡片同宽同缩进，hover 才显形，不抢视线 */
+.day-cards > .new-entry {
+  width: 100%; margin: 0; opacity: 0.35; transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+}
+.day-cards:hover > .new-entry { opacity: 1; }
+
+/* 「＋ 新的一天」在时间流最底部 */
+.new-day {
+  display: block; margin: 14px auto 4px; padding: 7px 20px;
+  background: none; color: var(--muted); cursor: pointer;
+  border: 1px dashed var(--border); border-radius: 20px; font-size: 13.5px;
+}
+.new-day:hover { color: var(--fg); border-color: var(--muted); }
+
+/* 日期旁的碎碎念按钮：平时淡，鼠标移到日期那一行才显形 */
+.day-note-btn {
+  border: none; background: none; color: var(--muted); cursor: pointer;
+  font-size: 12px; padding: 2px 7px; border-radius: 6px;
+  opacity: 0; transition: opacity 0.15s;
+}
+.day-head:hover .day-note-btn { opacity: 1; }
+.day-note-btn:hover { background: var(--border); color: var(--fg); }
+
+/* 顶栏开关关闭态：图标变淡并加一道斜杠 */
+.icon-btn.off { opacity: 0.4; position: relative; }
+.icon-btn.off::after {
+  content: ''; position: absolute; left: 18%; right: 18%; top: 50%;
+  border-top: 1.5px solid currentColor; transform: rotate(-20deg);
+}

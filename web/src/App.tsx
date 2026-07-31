@@ -17,6 +17,8 @@ export default function App() {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [projects, setProjects] = useState<Project[]>([])
+  // 碎碎念显示与否，记在本地，刷新后保持
+  const [showAsides, setShowAsides] = useState(() => localStorage.getItem('showAsides') !== 'off')
 
   useEffect(() => {
     const kick = () => setAuthed(false)
@@ -68,13 +70,20 @@ export default function App() {
           document.documentElement.dataset.theme = next
           localStorage.setItem('theme', next)
         }}>◐</button>
+        <button className={`icon-btn ${showAsides ? '' : 'off'}`}
+          title={showAsides ? '隐藏每天的碎碎念' : '显示每天的碎碎念'}
+          onClick={() => {
+            const next = !showAsides
+            setShowAsides(next)
+            localStorage.setItem('showAsides', next ? 'on' : 'off')
+          }}>💭</button>
         <button className="icon-btn" title="搜索 (⌘K)" onClick={() => setPaletteOpen(true)}>🔍</button>
         <SaveDot />
       </header>
       <main className="main">
         <Sidebar active={project} refreshKey={projRefresh}
           onSelect={id => { setProject(id); setAnchor(null); setProjRefresh(k => k + 1) }} />
-        <Timeline project={project} anchor={anchor} tasks={projects}
+        <Timeline project={project} anchor={anchor} tasks={projects} showAsides={showAsides}
           onExitAnchor={() => setAnchor(null)}
           onTasksChanged={() => setProjRefresh(k => k + 1)}
           onTaskClick={id => { setProject(id); setAnchor(null); setProjRefresh(k => k + 1) }} />
