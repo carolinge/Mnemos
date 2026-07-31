@@ -12,6 +12,8 @@ import Mathematics from '@tiptap/extension-mathematics'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { common, createLowlight } from 'lowlight'
 import { Hashtag } from './Hashtag'
+import { ResizableImage } from './ResizableImage'
+import { PasteRules } from './pasteRules'
 import 'katex/dist/katex.min.css'
 
 const lowlight = createLowlight(common)
@@ -36,6 +38,8 @@ export function buildExtensions(opts: ExtensionOpts) {
     TableHeader,
     TableCell,
     Mathematics,
+    ResizableImage,
+    PasteRules,
     ...(opts.onTag ? [Hashtag(opts.onTag)] : []),
   ]
 }

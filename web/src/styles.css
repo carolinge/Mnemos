@@ -233,3 +233,19 @@ body {
   border: 1px solid var(--border); border-radius: 8px; padding: 3px 10px;
   font-size: 12px; font-family: var(--mono); white-space: nowrap; box-shadow: var(--shadow);
 }
+
+/* ---------- 图片与灯箱 ---------- */
+.img-wrap { position: relative; display: inline-block; max-width: 100%; line-height: 0; }
+.img-wrap img { width: 100%; border-radius: 8px; cursor: zoom-in; }
+.img-wrap.selected img { outline: 2px solid var(--accent); }
+.img-handle {
+  position: absolute; right: -6px; bottom: -6px; width: 14px; height: 14px;
+  border-radius: 50%; background: var(--accent); border: 2px solid var(--card);
+  cursor: nwse-resize; opacity: 0; transition: opacity 0.15s;
+}
+.img-wrap:hover .img-handle, .img-wrap.selected .img-handle { opacity: 1; }
+.lightbox {
+  position: fixed; inset: 0; z-index: 100; background: rgba(0, 0, 0, 0.85);
+  display: grid; place-items: center; cursor: zoom-out;
+}
+.lightbox img { max-width: 94vw; max-height: 94vh; border-radius: 4px; }

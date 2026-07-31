@@ -111,7 +111,19 @@ export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove, 
           <button onClick={() => editor.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run()}>表格</button>
           <button onClick={() => editor.chain().focus().toggleCodeBlock().run()}>代码</button>
           <button onClick={() => editor.chain().focus().toggleTaskList().run()}>待办</button>
-          {/* 图片(T15)、引用(T16)、嵌入(T17)、流程图(T18) 按钮在后续任务追加 */}
+          <button onClick={() => {
+            const input = document.createElement('input')
+            input.type = 'file'; input.accept = 'image/*'
+            input.onchange = async () => {
+              const f = input.files?.[0]
+              if (!f) return
+              const { uploadImage } = await import('../api')
+              const url = await uploadImage(f)
+              editor.chain().focus().insertContent({ type: 'image', attrs: { src: url } }).run()
+            }
+            input.click()
+          }}>图片</button>
+          {/* 引用(T16)、嵌入(T17)、流程图(T18) 按钮在后续任务追加 */}
         </div>
       </FloatingMenu>}
       <EditorContent editor={editor} />

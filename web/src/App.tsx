@@ -6,6 +6,7 @@ import { Timeline } from './components/Timeline'
 import { Sidebar, type Project } from './components/Sidebar'
 import { CommandPalette } from './components/CommandPalette'
 import { TimeScrubber } from './components/TimeScrubber'
+import { Lightbox } from './components/Lightbox'
 
 export default function App() {
   const [authed, setAuthed] = useState<boolean | null>(null)
@@ -57,6 +58,7 @@ export default function App() {
         projects={projects}
         onJumpDay={day => { setProject(null); setAnchor(day) }}
         onSelectProject={id => { setProject(id); setAnchor(null) }} />
+      <Lightbox />
     </div>
   )
 }
