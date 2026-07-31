@@ -15,6 +15,7 @@ import { Hashtag } from './Hashtag'
 import { ResizableImage } from './ResizableImage'
 import { CitationNode } from './CitationNode'
 import { HtmlEmbed } from './HtmlEmbed'
+import { MermaidBlock } from './MermaidBlock'
 import { PasteRules } from './pasteRules'
 import 'katex/dist/katex.min.css'
 
@@ -42,6 +43,7 @@ export function buildExtensions(opts: ExtensionOpts) {
     Mathematics,
     CitationNode,
     ResizableImage,
+    MermaidBlock,
     HtmlEmbed,
     PasteRules,
     ...(opts.onTag ? [Hashtag(opts.onTag)] : []),

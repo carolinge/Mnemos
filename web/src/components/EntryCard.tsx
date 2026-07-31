@@ -135,7 +135,8 @@ export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove, 
               import('../editor/pasteRules').then(({ insertHtmlEmbed }) => insertHtmlEmbed(editor.view, html))
             }
           }}>嵌入</button>
-          {/* 流程图(T18) 按钮在后续任务追加 */}
+          <button onClick={() => editor.chain().focus()
+            .insertContent({ type: 'mermaidBlock', attrs: { code: '' } }).run()}>流程图</button>
         </div>
       </FloatingMenu>}
       <EditorContent editor={editor} />
