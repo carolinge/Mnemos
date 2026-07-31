@@ -129,7 +129,13 @@ export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove, 
               import('../editor/pasteRules').then(({ insertCitation }) => insertCitation(editor.view, url.trim()))
             }
           }}>引用</button>
-          {/* 嵌入(T17)、流程图(T18) 按钮在后续任务追加 */}
+          <button onClick={() => {
+            const html = window.prompt('粘贴 HTML 源码')
+            if (html) {
+              import('../editor/pasteRules').then(({ insertHtmlEmbed }) => insertHtmlEmbed(editor.view, html))
+            }
+          }}>嵌入</button>
+          {/* 流程图(T18) 按钮在后续任务追加 */}
         </div>
       </FloatingMenu>}
       <EditorContent editor={editor} />

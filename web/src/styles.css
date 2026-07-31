@@ -260,3 +260,34 @@ body {
 .cite-title.plain { font-weight: 400; color: var(--accent); word-break: break-all; }
 .cite-title:hover { color: var(--accent); }
 .cite-meta { color: var(--muted); font-size: 12.5px; }
+
+/* ---------- HTML 嵌入块 ---------- */
+.embed-block { border: 1px solid var(--border); border-radius: 10px; margin: 8px 0; overflow: hidden; }
+.embed-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 4px 10px; background: var(--bg); border-bottom: 1px solid var(--border);
+}
+.embed-tag { font-size: 11px; color: var(--muted); font-family: var(--mono); letter-spacing: 0.5px; }
+.embed-actions { display: flex; gap: 2px; }
+.embed-actions button {
+  border: none; background: none; color: var(--muted); font-size: 12px;
+  cursor: pointer; padding: 3px 7px; border-radius: 6px;
+}
+.embed-actions button:hover { background: var(--border); color: var(--fg); }
+.embed-frame { display: block; width: 100%; border: none; background: #fff; }
+.embed-resize { height: 8px; cursor: ns-resize; background: var(--bg); }
+.embed-resize:hover { background: var(--border); }
+.embed-source {
+  display: block; width: 100%; border: none; resize: vertical; padding: 10px 14px;
+  font-family: var(--mono); font-size: 12.5px; background: var(--bg); color: var(--fg); outline: none;
+}
+.toast {
+  position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%); z-index: 90;
+  display: flex; gap: 12px; align-items: center;
+  background: var(--fg); color: var(--bg); border-radius: 10px; padding: 9px 16px;
+  font-size: 13.5px; box-shadow: 0 6px 24px rgba(0,0,0,0.25);
+}
+.toast button {
+  border: none; background: none; color: inherit; font-weight: 600;
+  cursor: pointer; font-size: 13.5px; text-decoration: underline;
+}
