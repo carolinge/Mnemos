@@ -71,6 +71,7 @@ export function Timeline({ project, anchor, onExitAnchor, onTagClick }: {
   return (
     <div className="timeline" ref={boxRef} onScroll={onScroll}>
       <div ref={topSentinel} />
+      {!t.ready && <div className="skeleton"><div /><div /><div /></div>}
       {!t.hasOlder && t.ready && <p className="flow-edge">— 这里是一切的开始 —</p>}
       {t.days.map(d => (
         <section key={d.day} data-day={d.day}>

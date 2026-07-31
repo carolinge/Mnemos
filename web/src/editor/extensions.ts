@@ -10,7 +10,18 @@ import TableHeader from '@tiptap/extension-table-header'
 import TableCell from '@tiptap/extension-table-cell'
 import Mathematics from '@tiptap/extension-mathematics'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-import { common, createLowlight } from 'lowlight'
+import { createLowlight } from 'lowlight'
+import python from 'highlight.js/lib/languages/python'
+import javascript from 'highlight.js/lib/languages/javascript'
+import typescript from 'highlight.js/lib/languages/typescript'
+import bash from 'highlight.js/lib/languages/bash'
+import json from 'highlight.js/lib/languages/json'
+import yaml from 'highlight.js/lib/languages/yaml'
+import sql from 'highlight.js/lib/languages/sql'
+import r from 'highlight.js/lib/languages/r'
+import matlab from 'highlight.js/lib/languages/matlab'
+import cpp from 'highlight.js/lib/languages/cpp'
+import latex from 'highlight.js/lib/languages/latex'
 import { Hashtag } from './Hashtag'
 import { ResizableImage } from './ResizableImage'
 import { CitationNode } from './CitationNode'
@@ -19,7 +30,10 @@ import { MermaidBlock } from './MermaidBlock'
 import { PasteRules } from './pasteRules'
 import 'katex/dist/katex.min.css'
 
-const lowlight = createLowlight(common)
+// 只注册科研常用语言，避免把 highlight.js 全量语法打进首屏包
+const lowlight = createLowlight({
+  python, javascript, typescript, bash, json, yaml, sql, r, matlab, cpp, latex,
+})
 
 export interface ExtensionOpts {
   placeholder?: string

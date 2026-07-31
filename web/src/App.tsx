@@ -44,6 +44,13 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
+        <a className="icon-btn" href="/api/export" title="导出全部（Markdown+图片）">⤓</a>
+        <button className="icon-btn" title="切换主题" onClick={() => {
+          const cur = document.documentElement.dataset.theme
+          const next = cur === 'dark' ? 'light' : 'dark'
+          document.documentElement.dataset.theme = next
+          localStorage.setItem('theme', next)
+        }}>◐</button>
         <button className="icon-btn" title="搜索 (⌘K)" onClick={() => setPaletteOpen(true)}>🔍</button>
         <SaveDot />
       </header>
