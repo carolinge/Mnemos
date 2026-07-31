@@ -50,6 +50,31 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
     onSaved: e => setTask(e.task),
   })
 
+  // 链接与插图既给工具条按钮用，也给 Mod-K / Mod-Shift-I 快捷键用
+  function promptLink() {
+    const ed = editorRef.current
+    if (!ed) return
+    const url = window.prompt('链接地址', ed.getAttributes('link').href ?? 'https://')
+    if (url === null) return
+    if (!url.trim()) { ed.chain().focus().unsetLink().run(); return }
+    ed.chain().focus().setLink({ href: url.trim() }).run()
+  }
+
+  function pickImage() {
+    const ed = editorRef.current
+    if (!ed) return
+    const input = document.createElement('input')
+    input.type = 'file'; input.accept = 'image/*'; input.multiple = true
+    input.onchange = async () => {
+      const { uploadImage } = await import('../api')
+      for (const f of Array.from(input.files ?? [])) {
+        const url = await uploadImage(f)
+        ed.chain().focus().insertContent({ type: 'image', attrs: { src: url } }).run()
+      }
+    }
+    input.click()
+  }
+
   const editor = useEditor({
     extensions: buildExtensions({
       // 正文里敲 #名字 也能设置任务（与选择器等价）
@@ -59,6 +84,8 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
           autosave.schedule()
         }
       },
+      onLink: promptLink,
+      onImage: pickImage,
     }),
     content: initialContent,
     onUpdate: () => autosave.schedule(),
@@ -112,30 +139,20 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
             onClick={() => editor.chain().focus().toggleCode().run()}>{'<>'}</button>
           <button className={editor.isActive('highlight') ? 'on' : ''}
             onClick={() => editor.chain().focus().toggleHighlight().run()}>H</button>
-          <button onClick={() => {
-            const url = window.prompt('链接地址')
-            if (url) editor.chain().focus().setLink({ href: url }).run()
-          }}>🔗</button>
+          <button title="链接 (⌘K)" onClick={promptLink}>🔗</button>
         </div>
       </BubbleMenu>}
       {editor && <FloatingMenu editor={editor} tippyOptions={{ duration: 120 }}>
         <div className="menu-bar">
-          <button onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</button>
-          <button onClick={() => editor.chain().focus().insertTable({ rows: 2, cols: 2, withHeaderRow: true }).run()}>表格</button>
-          <button onClick={() => editor.chain().focus().toggleCodeBlock().run()}>代码</button>
-          <button onClick={() => editor.chain().focus().toggleTaskList().run()}>待办</button>
-          <button onClick={() => {
-            const input = document.createElement('input')
-            input.type = 'file'; input.accept = 'image/*'
-            input.onchange = async () => {
-              const f = input.files?.[0]
-              if (!f) return
-              const { uploadImage } = await import('../api')
-              const url = await uploadImage(f)
-              editor.chain().focus().insertContent({ type: 'image', attrs: { src: url } }).run()
-            }
-            input.click()
-          }}>图片</button>
+          <button title="二级标题 (⌘2)"
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</button>
+          <button title="表格 (⌘T)"
+            onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>表格</button>
+          <button title="代码块 (⌘⇧K)"
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}>代码</button>
+          <button title="待办清单"
+            onClick={() => editor.chain().focus().toggleTaskList().run()}>待办</button>
+          <button title="插入图片，可多选 (⌘⇧I)" onClick={pickImage}>图片</button>
           <button onClick={() => {
             const url = window.prompt('文献链接（DOI / arXiv / PubMed）')
             if (url) {

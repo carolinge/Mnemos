@@ -34,7 +34,11 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      if (!(e.metaKey || e.ctrlKey)) return
+      const key = e.key.toLowerCase()
+      // ⌘P 总是开面板；⌘K 让位给 Typora 的「插入链接」——正在编辑时不抢
+      const inEditor = (e.target as HTMLElement | null)?.closest?.('.ProseMirror') != null
+      if (key === 'p' || (key === 'k' && !inEditor)) {
         e.preventDefault(); setPaletteOpen(v => !v)
       }
     }
@@ -77,7 +81,8 @@ export default function App() {
             setShowAsides(next)
             localStorage.setItem('showAsides', next ? 'on' : 'off')
           }}>💭</button>
-        <button className="icon-btn" title="搜索 (⌘K)" onClick={() => setPaletteOpen(true)}>🔍</button>
+        <button className="icon-btn" title="搜索 (⌘P，或不在编辑时按 ⌘K)"
+          onClick={() => setPaletteOpen(true)}>🔍</button>
         <SaveDot />
       </header>
       <main className="main">

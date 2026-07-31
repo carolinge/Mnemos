@@ -34,14 +34,52 @@ describe('Typora 快捷键', () => {
     expect(ed.isActive('heading', { level: 1 })).toBe(true)
   })
 
-  it('Mod-- 逐级降到正文', () => {
+  it('Mod-- 逐级降级，H6 之后回到正文（标题层级与 Typora 一致为 1–6）', () => {
     ed.commands.setHeading({ level: 1 })
-    press('Mod--')
-    expect(ed.isActive('heading', { level: 2 })).toBe(true)
-    press('Mod--')
-    expect(ed.isActive('heading', { level: 3 })).toBe(true)
+    for (const level of [2, 3, 4, 5, 6] as const) {
+      press('Mod--')
+      expect(ed.isActive('heading', { level })).toBe(true)
+    }
     press('Mod--')
     expect(ed.isActive('paragraph')).toBe(true)
+  })
+
+  it('Mod-1…Mod-6 直接设标题层级，Mod-0 回正文', () => {
+    ed.commands.setTextSelection(2)
+    for (const level of [1, 2, 3, 4, 5, 6] as const) {
+      press(`Mod-${level}`)
+      expect(ed.isActive('heading', { level })).toBe(true)
+    }
+    press('Mod-0')
+    expect(ed.isActive('paragraph')).toBe(true)
+  })
+
+  it('Typora 键位：Mod-Shift-K 代码块、Mod-Shift-Q 引用、Mod-T 表格', () => {
+    ed.commands.setTextSelection(2)
+    press('Mod-Shift-k')
+    expect(ed.isActive('codeBlock')).toBe(true)
+    press('Mod-Shift-k')          // 再按一次取消
+
+    press('Mod-Shift-q')
+    expect(ed.isActive('blockquote')).toBe(true)
+    press('Mod-Shift-q')
+
+    press('Mod-t')
+    expect(ed.isActive('table')).toBe(true)
+  })
+
+  it('Mod-K 走注入的链接回调，不直接改文档', () => {
+    let called = 0
+    const ed2 = new Editor({
+      extensions: buildExtensions({ onLink: () => { called++ } }),
+      content: { type: 'doc', content: [{ type: 'paragraph' }] },
+    })
+    const ext = ed2.extensionManager.extensions.find(e => e.name === 'typoraKeys')!
+    const fn = ext.config.addKeyboardShortcuts as unknown as
+      (this: { editor: Editor }) => Record<string, () => boolean>
+    fn.call({ editor: ed2 })['Mod-k']()
+    expect(called).toBe(1)
+    ed2.destroy()
   })
 
   it('Mod-Shift-[ 切有序列表、Mod-Shift-] 切无序列表', () => {

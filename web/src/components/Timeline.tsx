@@ -125,8 +125,12 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
                       onTaskClick={onTaskClick}
                       onCreated={() => { t.reload(); onTasksChanged?.() }} />
                   ))}
-                  <button className="new-entry" title={`在 ${d.day} 下新增一张卡片`}
-                    onClick={() => addComposer(d.day)}>＋ 新条目</button>
+                  <div className="add-row">
+                    <button className="new-entry" title={`在 ${d.day} 下新增一张卡片`}
+                      onClick={() => addComposer(d.day)}>＋ 新条目</button>
+                    <button className="new-day" title="新建另一个日期的卡片（补以前的笔记）"
+                      onClick={addDay}>＋ 新的一天</button>
+                  </div>
                 </div>
               </section>
             )}
@@ -144,14 +148,14 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
                 onTaskClick={onTaskClick}
                 onCreated={() => { t.reload(); onTasksChanged?.() }} />
             ))}
-            <button className="new-entry" title="在今天下新增一张卡片"
-              onClick={() => addComposer(today)}>＋ 新条目</button>
+            <div className="add-row">
+              <button className="new-entry" title="在今天下新增一张卡片"
+                onClick={() => addComposer(today)}>＋ 新条目</button>
+              <button className="new-day" title="新建另一个日期的卡片（补以前的笔记）"
+                onClick={addDay}>＋ 新的一天</button>
+            </div>
           </div>
         </section>
-      )}
-      {!project && (
-        <button className="new-day" title="给别的日期新建一张卡片（补以前的笔记）"
-          onClick={addDay}>＋ 新的一天</button>
       )}
       {awayFromBottom && (
         <button className="back-today" onClick={() => {

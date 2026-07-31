@@ -3,6 +3,9 @@ import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tip
 import { useRef } from 'react'
 
 export const ResizableImage = Image.extend({
+  // 行内节点：多张图能排在同一行，放不下自动换行
+  inline: true,
+  group: 'inline',
   addAttributes() {
     return {
       ...this.parent?.(),
@@ -44,7 +47,7 @@ function ImageView({ node, updateAttributes, selected }: NodeViewProps) {
   }
 
   return (
-    <NodeViewWrapper as="div" className={`img-wrap ${selected ? 'selected' : ''}`}
+    <NodeViewWrapper as="span" className={`img-wrap ${selected ? 'selected' : ''}`}
       ref={wrapRef} style={{ width: node.attrs.width ? `${node.attrs.width}%` : undefined }}>
       <img src={node.attrs.src} alt={node.attrs.alt ?? ''} onClick={openLightbox} draggable={false} />
       <span className="img-handle" onPointerDown={startResize} title="拖动调整大小" />

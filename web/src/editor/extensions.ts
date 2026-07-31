@@ -22,8 +22,10 @@ import r from 'highlight.js/lib/languages/r'
 import matlab from 'highlight.js/lib/languages/matlab'
 import cpp from 'highlight.js/lib/languages/cpp'
 import latex from 'highlight.js/lib/languages/latex'
+import { ReactNodeViewRenderer } from '@tiptap/react'
 import { Hashtag } from './Hashtag'
 import { TyporaKeys } from './TyporaKeys'
+import { CodeBlockView } from './CodeBlockView'
 import { ResizableImage } from './ResizableImage'
 import { CitationNode } from './CitationNode'
 import { HtmlEmbed } from './HtmlEmbed'
@@ -39,13 +41,17 @@ const lowlight = createLowlight({
 export interface ExtensionOpts {
   placeholder?: string
   onTag?: (name: string) => void
+  onLink?: () => void     // Mod-K
+  onImage?: () => void    // Mod-Shift-I
 }
 
-// 后续任务在此追加：Hashtag(T12)、ResizableImage(T15)、Citation(T16)、HtmlEmbed+pasteRules(T17)、Mermaid(T18)
 export function buildExtensions(opts: ExtensionOpts) {
   return [
-    StarterKit.configure({ codeBlock: false, heading: { levels: [1, 2, 3] } }),
-    CodeBlockLowlight.configure({ lowlight }),
+    // 标题 1–6，与 Typora 的 Mod-1…Mod-6 对齐
+    StarterKit.configure({ codeBlock: false, heading: { levels: [1, 2, 3, 4, 5, 6] } }),
+    CodeBlockLowlight.extend({
+      addNodeView() { return ReactNodeViewRenderer(CodeBlockView) },
+    }).configure({ lowlight }),
     Placeholder.configure({ placeholder: opts.placeholder ?? '写点什么… # 打项目标签' }),
     Link.configure({ autolink: true, openOnClick: false }),
     Highlight,
@@ -61,7 +67,7 @@ export function buildExtensions(opts: ExtensionOpts) {
     MermaidBlock,
     HtmlEmbed,
     PasteRules,
-    TyporaKeys,
+    TyporaKeys({ onLink: opts.onLink, onImage: opts.onImage }),
     ...(opts.onTag ? [Hashtag(opts.onTag)] : []),
   ]
 }
