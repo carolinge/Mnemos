@@ -8,7 +8,7 @@ import type { EntryData } from '../src/hooks/useAutosave'
 
 const mockApi = api as unknown as ReturnType<typeof vi.fn>
 const entry = (id: string, day: string, position = 0): EntryData =>
-  ({ id, day, position, version: 0, content: {}, created_at: '2026-07-28T09:00:00Z', updated_at: '', tags: [] })
+  ({ id, day, position, version: 0, content: {}, created_at: '2026-07-28T09:00:00Z', updated_at: '', task: null })
 const resp = (days: [string, string[]][]) => ({
   days: days.map(([day, ids]) => ({ day, entries: ids.map(id => entry(id, day)) })),
   nextBefore: days.length ? days[days.length - 1][0] : null,

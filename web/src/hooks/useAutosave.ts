@@ -6,7 +6,7 @@ export interface EntryData {
   id: string; day: string; position: number; version: number
   content: unknown; created_at: string; updated_at: string
   text?: string
-  tags: { id: string; name: string; color: string }[]
+  task: { id: string; name: string; color: string } | null
 }
 
 interface Opts {
@@ -14,7 +14,7 @@ interface Opts {
   day: string
   version: number
   draftKey: string
-  getPayload: () => { content?: unknown; tags?: string[] }
+  getPayload: () => { content?: unknown; task?: string | null }
   onCreated?: (e: EntryData) => void
   onSaved?: (e: EntryData) => void
 }

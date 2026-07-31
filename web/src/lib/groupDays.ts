@@ -1,6 +1,6 @@
 import type { EntryData } from '../hooks/useAutosave'
 
-export interface DayGroup { day: string; entries: EntryData[] }
+export interface DayGroup { day: string; entries: EntryData[]; note?: string }
 
 export function mergeDays(existing: DayGroup[], incoming: DayGroup[]): DayGroup[] {
   const map = new Map(existing.map(d => [d.day, d]))
@@ -8,7 +8,11 @@ export function mergeDays(existing: DayGroup[], incoming: DayGroup[]): DayGroup[
     const cur = map.get(d.day)
     if (!cur) { map.set(d.day, d); continue }
     const ids = new Set(cur.entries.map(e => e.id))
-    map.set(d.day, { day: d.day, entries: [...cur.entries, ...d.entries.filter(e => !ids.has(e.id))] })
+    map.set(d.day, {
+      day: d.day,
+      entries: [...cur.entries, ...d.entries.filter(e => !ids.has(e.id))],
+      note: d.note ?? cur.note,
+    })
   }
   return [...map.values()].sort((a, b) => a.day.localeCompare(b.day))
 }

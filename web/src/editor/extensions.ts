@@ -23,6 +23,7 @@ import matlab from 'highlight.js/lib/languages/matlab'
 import cpp from 'highlight.js/lib/languages/cpp'
 import latex from 'highlight.js/lib/languages/latex'
 import { Hashtag } from './Hashtag'
+import { TyporaKeys } from './TyporaKeys'
 import { ResizableImage } from './ResizableImage'
 import { CitationNode } from './CitationNode'
 import { HtmlEmbed } from './HtmlEmbed'
@@ -60,6 +61,7 @@ export function buildExtensions(opts: ExtensionOpts) {
     MermaidBlock,
     HtmlEmbed,
     PasteRules,
+    TyporaKeys,
     ...(opts.onTag ? [Hashtag(opts.onTag)] : []),
   ]
 }

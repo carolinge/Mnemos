@@ -5,7 +5,7 @@ import type { EntryData } from '../src/hooks/useAutosave'
 const g = (day: string, ...ids: string[]) => ({
   day,
   entries: ids.map(id => ({
-    id, day, position: 0, version: 0, content: {}, created_at: '', updated_at: '', tags: [],
+    id, day, position: 0, version: 0, content: {}, created_at: '', updated_at: '', task: null,
   })) as EntryData[],
 })
 

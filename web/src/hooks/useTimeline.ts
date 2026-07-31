@@ -16,7 +16,10 @@ export function useTimeline(project: string | null, anchor: string | null) {
   const [hasOlder, setHasOlder] = useState(true)
   const [hasNewer, setHasNewer] = useState(false)
   const [ready, setReady] = useState(false)
+  const [reloadKey, setReloadKey] = useState(0)
   const loading = useRef(false)
+
+  const reload = useCallback(() => setReloadKey(k => k + 1), [])
 
   useEffect(() => {
     let alive = true
@@ -32,7 +35,7 @@ export function useTimeline(project: string | null, anchor: string | null) {
       setReady(true)
     }).catch(() => { if (alive) setReady(true) })
     return () => { alive = false }
-  }, [project, anchor])
+  }, [project, anchor, reloadKey])
 
   const loadOlder = useCallback(async () => {
     if (loading.current || !hasOlder || !days.length) return
@@ -64,10 +67,14 @@ export function useTimeline(project: string | null, anchor: string | null) {
     }))
   }, [])
 
+  const applyNote = useCallback((day: string, note: string) => {
+    setDays(cur => cur.map(d => d.day === day ? { ...d, note } : d))
+  }, [])
+
   const removeEntry = useCallback((id: string) => {
     setDays(cur => cur.map(d => ({ ...d, entries: d.entries.filter(e => e.id !== id) }))
       .filter(d => d.entries.length > 0))
   }, [])
 
-  return { days, ready, hasOlder, hasNewer, loadOlder, loadNewer, applyEntry, removeEntry }
+  return { days, ready, hasOlder, hasNewer, loadOlder, loadNewer, applyEntry, applyNote, removeEntry, reload }
 }

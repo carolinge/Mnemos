@@ -1,19 +1,23 @@
-import { useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor, BubbleMenu, FloatingMenu, type Editor } from '@tiptap/react'
 import { buildExtensions } from '../editor/extensions'
 import { useAutosave, type EntryData } from '../hooks/useAutosave'
 import { api } from '../api'
+import { TaskPicker } from './TaskPicker'
+import type { Project } from './Sidebar'
 
 const EMPTY_DOC = { type: 'doc', content: [] }
+const COLLAPSED_MAX_PX = 320   // 折叠态最高高度，超出显示「展开」
 
-export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove, onTagClick }: {
+export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, onMove, onTaskClick }: {
   entry: EntryData | null      // null = 尚未落库的新条目
   day: string
   draftKey: string
+  tasks: Project[]
   onCreated?: (e: EntryData) => void
   onDeleted?: (id: string) => void
   onMove?: (id: string, dir: -1 | 1) => void
-  onTagClick?: (projectId: string) => void
+  onTaskClick?: (taskId: string) => void
 }) {
   // 断网草稿优先于服务器内容
   const initialContent = useMemo(() => {
@@ -25,9 +29,13 @@ export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftKey])
 
-  const [tags, setTags] = useState<{ id?: string; name: string; color?: string }[]>(entry?.tags ?? [])
-  const tagsRef = useRef(tags)
-  tagsRef.current = tags
+  const [task, setTask] = useState<{ id?: string; name: string; color?: string } | null>(entry?.task ?? null)
+  const taskRef = useRef(task)
+  taskRef.current = task
+
+  const [expanded, setExpanded] = useState(false)
+  const [overflowing, setOverflowing] = useState(false)
+  const bodyRef = useRef<HTMLDivElement>(null)
 
   const editorRef = useRef<Editor | null>(null)
   const autosave = useAutosave({
@@ -37,17 +45,18 @@ export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove, 
     draftKey,
     getPayload: () => ({
       content: editorRef.current?.getJSON() ?? EMPTY_DOC,
-      tags: tagsRef.current.map(t => t.name),
+      task: taskRef.current?.name ?? null,
     }),
     onCreated,
-    onSaved: e => setTags(e.tags),
+    onSaved: e => setTask(e.task),
   })
 
   const editor = useEditor({
     extensions: buildExtensions({
+      // 正文里敲 #名字 也能设置任务（与选择器等价）
       onTag: name => {
-        if (!tagsRef.current.some(t => t.name === name)) {
-          setTags([...tagsRef.current, { name }])
+        if (taskRef.current?.name !== name) {
+          setTask({ name })
           autosave.schedule()
         }
       },
@@ -56,6 +65,17 @@ export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove, 
     onUpdate: () => autosave.schedule(),
   })
   editorRef.current = editor
+
+  // 内容超过折叠高度才显示「展开」按钮
+  useLayoutEffect(() => {
+    const el = bodyRef.current
+    if (!el) return
+    const check = () => setOverflowing(el.scrollHeight > COLLAPSED_MAX_PX + 8)
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [editor])
 
   async function remove() {
     const id = autosave.entryIdRef.current
@@ -69,17 +89,15 @@ export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove, 
   return (
     <article className="entry-card" data-entry-id={id ?? ''}>
       <div className="entry-head">
-        <span className="entry-time">{entry ? entry.created_at.slice(11, 16) : ''}</span>
-        <span className="entry-tags">
-          {tags.map(t => (
-            <span key={t.name} className="chip" style={{ borderColor: t.color }}>
-              <i style={{ background: t.color ?? 'var(--muted)' }} />
-              <button className="chip-name" onClick={() => t.id && onTagClick?.(t.id)}>{t.name}</button>
-              <button className="chip-x" title="移除标签" onClick={() => {
-                setTags(tagsRef.current.filter(x => x.name !== t.name)); autosave.schedule()
-              }}>×</button>
-            </span>
-          ))}
+        <span className="entry-head-left">
+          <TaskPicker value={task} tasks={tasks} onPick={name => {
+            setTask(name ? { name } : null)
+            autosave.schedule()
+          }} />
+          {task?.id && (
+            <button className="task-goto" title="只看这个任务"
+              onClick={() => onTaskClick?.(task.id!)}>↗</button>
+          )}
         </span>
         <span className="entry-actions">
           {id && onMove && <>
@@ -139,7 +157,15 @@ export function EntryCard({ entry, day, draftKey, onCreated, onDeleted, onMove, 
             .insertContent({ type: 'mermaidBlock', attrs: { code: '' } }).run()}>流程图</button>
         </div>
       </FloatingMenu>}
-      <EditorContent editor={editor} />
+      <div className={`entry-body ${expanded || !overflowing ? '' : 'collapsed'}`} ref={bodyRef}
+        style={expanded || !overflowing ? undefined : { maxHeight: COLLAPSED_MAX_PX }}>
+        <EditorContent editor={editor} />
+      </div>
+      {overflowing && (
+        <button className="entry-toggle" onClick={() => setExpanded(v => !v)}>
+          {expanded ? '收起 ↑' : '展开 ↓'}
+        </button>
+      )}
     </article>
   )
 }

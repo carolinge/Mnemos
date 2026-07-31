@@ -1,37 +1,37 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { api } from '../api'
-import { fmtDay, todayStr } from '../lib/groupDays'
+import { todayStr } from '../lib/groupDays'
 import { useTimeline } from '../hooks/useTimeline'
 import type { EntryData } from '../hooks/useAutosave'
+import type { Project } from './Sidebar'
 import { EntryCard } from './EntryCard'
+import { DayHeader } from './DayHeader'
 
-export function Timeline({ project, anchor, onExitAnchor, onTagClick }: {
+export function Timeline({ project, anchor, tasks, onExitAnchor, onTaskClick, onTasksChanged }: {
   project: string | null
   anchor: string | null
+  tasks: Project[]
   onExitAnchor: () => void
-  onTagClick?: (projectId: string) => void
+  onTaskClick?: (taskId: string) => void
+  onTasksChanged?: () => void
 }) {
   const t = useTimeline(project, anchor)
   const boxRef = useRef<HTMLDivElement>(null)
   const topSentinel = useRef<HTMLDivElement>(null)
   const [composers, setComposers] = useState<string[]>(() => [crypto.randomUUID()])
   const [awayFromBottom, setAway] = useState(false)
+  const [foldedYears, setFoldedYears] = useState<Set<string>>(new Set())
   const didInitScroll = useRef(false)
 
-  // 首次加载后定位：锚点日或底部（今天）
   useLayoutEffect(() => {
     if (!t.ready || didInitScroll.current) return
     didInitScroll.current = true
     const el = boxRef.current!
-    if (anchor) {
-      el.querySelector(`[data-day="${anchor}"]`)?.scrollIntoView()
-    } else {
-      el.scrollTop = el.scrollHeight
-    }
+    if (anchor) el.querySelector(`[data-day="${anchor}"]`)?.scrollIntoView()
+    else el.scrollTop = el.scrollHeight
   }, [t.ready, anchor])
   useLayoutEffect(() => { didInitScroll.current = false }, [project, anchor])
 
-  // 顶部哨兵：上翻加载更早，且保持视口不跳
   useLayoutEffect(() => {
     const el = boxRef.current, s = topSentinel.current
     if (!el || !s) return
@@ -64,31 +64,74 @@ export function Timeline({ project, anchor, onExitAnchor, onTagClick }: {
     t.applyEntry(ra); t.applyEntry(rb)
   }
 
+  // 改日期：把这一天的所有卡片搬到新日期
+  async function moveDay(from: string, to: string) {
+    const group = t.days.find(d => d.day === from)
+    if (!group) return
+    for (const e of group.entries) {
+      await api(`/api/entries/${e.id}`, {
+        method: 'PATCH', body: JSON.stringify({ day: to, version: e.version }),
+      })
+    }
+    t.reload()
+  }
+
+  function toggleYear(year: string) {
+    setFoldedYears(prev => {
+      const next = new Set(prev)
+      next.has(year) ? next.delete(year) : next.add(year)
+      return next
+    })
+  }
+
   const today = todayStr()
   const showToday = !project && !anchor
   const hasTodayGroup = t.days.some(d => d.day === today)
+
+  // 天按年份分组，年份标头可折叠一整年
+  let lastYear: string | null = null
 
   return (
     <div className="timeline" ref={boxRef} onScroll={onScroll}>
       <div ref={topSentinel} />
       {!t.ready && <div className="skeleton"><div /><div /><div /></div>}
       {!t.hasOlder && t.ready && <p className="flow-edge">— 这里是一切的开始 —</p>}
-      {t.days.map(d => (
-        <section key={d.day} data-day={d.day}>
-          <h2 className="day-head">{fmtDay(d.day)}</h2>
-          {d.entries.map(e => (
-            <EntryCard key={e.id} entry={e} day={d.day} draftKey={e.id}
-              onDeleted={t.removeEntry} onTagClick={onTagClick}
-              onMove={(id, dir) => move(d.day, id, dir)} />
-          ))}
-        </section>
-      ))}
+      {t.days.map(d => {
+        const year = d.day.slice(0, 4)
+        const yearHead = year !== lastYear ? year : null
+        lastYear = year
+        const folded = foldedYears.has(year)
+        return (
+          <div key={d.day}>
+            {yearHead && (
+              <h1 className="year-head" onClick={() => toggleYear(year)}>
+                <span className="year-caret">{folded ? '▸' : '▾'}</span> {year}
+                {folded && <span className="year-hint">（已折叠，点击展开）</span>}
+              </h1>
+            )}
+            {!folded && (
+              <section data-day={d.day}>
+                <DayHeader day={d.day} note={d.note ?? ''}
+                  onChangeDay={moveDay}
+                  onNoteSaved={(day, text) => t.applyNote(day, text)} />
+                {d.entries.map(e => (
+                  <EntryCard key={e.id} entry={e} day={d.day} draftKey={e.id} tasks={tasks}
+                    onDeleted={t.removeEntry} onTaskClick={onTaskClick}
+                    onMove={(id, dir) => move(d.day, id, dir)} />
+                ))}
+              </section>
+            )}
+          </div>
+        )
+      })}
       {t.hasNewer && <button className="load-newer" onClick={() => t.loadNewer()}>加载更新的内容 ↓</button>}
       {showToday && (
         <section data-day={today}>
-          {!hasTodayGroup && <h2 className="day-head">{fmtDay(today)}</h2>}
+          {!hasTodayGroup && <DayHeader day={today} note="" onNoteSaved={(day, text) => t.applyNote(day, text)} />}
           {composers.map(key => (
-            <EntryCard key={key} entry={null} day={today} draftKey={`new:${key}`} onTagClick={onTagClick} />
+            <EntryCard key={key} entry={null} day={today} draftKey={`new:${key}`} tasks={tasks}
+              onTaskClick={onTaskClick}
+              onCreated={() => { t.reload(); onTasksChanged?.() }} />
           ))}
           <button className="new-entry" onClick={() => setComposers(c => [...c, crypto.randomUUID()])}>
             ＋ 新条目

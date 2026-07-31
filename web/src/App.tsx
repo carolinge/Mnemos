@@ -57,8 +57,10 @@ export default function App() {
       <main className="main">
         <Sidebar active={project} refreshKey={projRefresh}
           onSelect={id => { setProject(id); setAnchor(null); setProjRefresh(k => k + 1) }} />
-        <Timeline project={project} anchor={anchor} onExitAnchor={() => setAnchor(null)}
-          onTagClick={id => { setProject(id); setAnchor(null); setProjRefresh(k => k + 1) }} />
+        <Timeline project={project} anchor={anchor} tasks={projects}
+          onExitAnchor={() => setAnchor(null)}
+          onTasksChanged={() => setProjRefresh(k => k + 1)}
+          onTaskClick={id => { setProject(id); setAnchor(null); setProjRefresh(k => k + 1) }} />
         <TimeScrubber refreshKey={projRefresh}
           onJump={day => { setProject(null); setAnchor(day) }} />
       </main>
