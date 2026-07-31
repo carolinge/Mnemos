@@ -114,11 +114,13 @@ export function Timeline({ project, anchor, tasks, onExitAnchor, onTaskClick, on
                 <DayHeader day={d.day} note={d.note ?? ''}
                   onChangeDay={moveDay}
                   onNoteSaved={(day, text) => t.applyNote(day, text)} />
-                {d.entries.map(e => (
-                  <EntryCard key={e.id} entry={e} day={d.day} draftKey={e.id} tasks={tasks}
-                    onDeleted={t.removeEntry} onTaskClick={onTaskClick}
-                    onMove={(id, dir) => move(d.day, id, dir)} />
-                ))}
+                <div className="day-cards">
+                  {d.entries.map(e => (
+                    <EntryCard key={e.id} entry={e} day={d.day} draftKey={e.id} tasks={tasks}
+                      onDeleted={t.removeEntry} onTaskClick={onTaskClick}
+                      onMove={(id, dir) => move(d.day, id, dir)} />
+                  ))}
+                </div>
               </section>
             )}
           </div>
@@ -128,11 +130,13 @@ export function Timeline({ project, anchor, tasks, onExitAnchor, onTaskClick, on
       {showToday && (
         <section data-day={today}>
           {!hasTodayGroup && <DayHeader day={today} note="" onNoteSaved={(day, text) => t.applyNote(day, text)} />}
-          {composers.map(key => (
-            <EntryCard key={key} entry={null} day={today} draftKey={`new:${key}`} tasks={tasks}
-              onTaskClick={onTaskClick}
-              onCreated={() => { t.reload(); onTasksChanged?.() }} />
-          ))}
+          <div className="day-cards">
+            {composers.map(key => (
+              <EntryCard key={key} entry={null} day={today} draftKey={`new:${key}`} tasks={tasks}
+                onTaskClick={onTaskClick}
+                onCreated={() => { t.reload(); onTasksChanged?.() }} />
+            ))}
+          </div>
           <button className="new-entry" onClick={() => setComposers(c => [...c, crypto.randomUUID()])}>
             ＋ 新条目
           </button>

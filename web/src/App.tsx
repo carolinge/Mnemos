@@ -15,6 +15,7 @@ export default function App() {
   const [anchor, setAnchor] = useState<string | null>(null)
   const [projRefresh, setProjRefresh] = useState(0)
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [projects, setProjects] = useState<Project[]>([])
 
   useEffect(() => {
@@ -44,7 +45,23 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <a className="icon-btn" href="/api/export" title="导出全部（Markdown+图片）">⤓</a>
+        <span className="export-menu-wrap">
+          <button className="icon-btn" title="导出" onClick={() => setExportOpen(v => !v)}>⤓</button>
+          {exportOpen && (
+            <div className="export-menu" onMouseLeave={() => setExportOpen(false)}>
+              <a href="/api/export?format=full" onClick={() => setExportOpen(false)}>
+                整份 Markdown<small>一个文件，可用 Typora 打开</small>
+              </a>
+              <a href="/api/export?format=monthly" onClick={() => setExportOpen(false)}>
+                按月拆分<small>每月一个 .md</small>
+              </a>
+              <a href="/api/export?format=print" target="_blank" rel="noreferrer"
+                onClick={() => setExportOpen(false)}>
+                打印 / 存 PDF<small>新标签页打开后 ⌘P</small>
+              </a>
+            </div>
+          )}
+        </span>
         <button className="icon-btn" title="切换主题" onClick={() => {
           const cur = document.documentElement.dataset.theme
           const next = cur === 'dark' ? 'light' : 'dark'

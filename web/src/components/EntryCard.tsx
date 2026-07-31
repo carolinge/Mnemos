@@ -7,7 +7,7 @@ import { TaskPicker } from './TaskPicker'
 import type { Project } from './Sidebar'
 
 const EMPTY_DOC = { type: 'doc', content: [] }
-const COLLAPSED_MAX_PX = 320   // 折叠态最高高度，超出显示「展开」
+const COLLAPSED_MAX_PX = 140   // 折叠态约四行，超出显示「展开」
 
 export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, onMove, onTaskClick }: {
   entry: EntryData | null      // null = 尚未落库的新条目
