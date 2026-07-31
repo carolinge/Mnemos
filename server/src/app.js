@@ -1,4 +1,7 @@
+import fs from 'node:fs'
+import path from 'node:path'
 import { Hono } from 'hono'
+import { serveStatic } from '@hono/node-server/serve-static'
 import { authRoutes, requireAuth } from './auth.js'
 import { entriesRoutes } from './entries.js'
 import { imagesRoutes } from './images.js'
@@ -15,5 +18,12 @@ export function createApp({ db, imagesDir, password, fetchImpl = fetch, webDist 
   imagesRoutes(app, imagesDir)
   citeRoutes(app, db, fetchImpl)
   exportRoutes(app, db, imagesDir)
+
+  // 生产模式：由本进程静态托管前端构建产物，单容器部署
+  if (webDist) {
+    const index = fs.readFileSync(path.join(webDist, 'index.html'), 'utf8')
+    app.use('/assets/*', serveStatic({ root: path.relative(process.cwd(), webDist) || '.' }))
+    app.get('*', c => c.html(index))
+  }
   return app
 }
