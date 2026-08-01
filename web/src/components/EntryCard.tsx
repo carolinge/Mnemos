@@ -36,6 +36,10 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
   const [overflowing, setOverflowing] = useState(false)
   const bodyRef = useRef<HTMLDivElement>(null)
 
+  // 源码模式：显示这张卡片的 Markdown 原文，可直接改、可整段粘贴外部 Markdown
+  const [source, setSource] = useState<string | null>(null)   // null = 渲染模式
+  const [busy, setBusy] = useState(false)
+
   const editorRef = useRef<Editor | null>(null)
   const autosave = useAutosave({
     entryId: entry?.id ?? null,
@@ -103,6 +107,38 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
     return () => ro.disconnect()
   }, [editor])
 
+  // 渲染 → 源码：把当前文档转成 Markdown 显示
+  async function toSource() {
+    const ed = editorRef.current
+    if (!ed || busy) return
+    setBusy(true)
+    try {
+      const r = await api<{ markdown: string }>('/api/convert/to-markdown', {
+        method: 'POST', body: JSON.stringify({ content: ed.getJSON() }),
+      })
+      setSource(r.markdown)
+    } catch {
+      window.alert('转换源码失败，请检查网络')
+    } finally { setBusy(false) }
+  }
+
+  // 源码 → 渲染：解析回文档并落库
+  async function toRendered() {
+    const ed = editorRef.current
+    if (!ed || source === null || busy) return
+    setBusy(true)
+    try {
+      const r = await api<{ content: unknown }>('/api/convert/to-doc', {
+        method: 'POST', body: JSON.stringify({ markdown: source }),
+      })
+      ed.commands.setContent(r.content as never, false)   // 不触发 onUpdate，下面手动排保存
+      setSource(null)
+      autosave.schedule()
+    } catch {
+      window.alert('解析 Markdown 失败，源码已保留，可修改后重试')
+    } finally { setBusy(false) }
+  }
+
   async function remove() {
     const id = autosave.entryIdRef.current
     if (!id) return
@@ -169,15 +205,35 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
             .insertContent({ type: 'mermaidBlock', attrs: { code: '' } }).run()}>流程图</button>
         </div>
       </FloatingMenu>}
-      <div className={`entry-body ${expanded || !overflowing ? '' : 'collapsed'}`} ref={bodyRef}
-        style={expanded || !overflowing ? undefined : { maxHeight: COLLAPSED_MAX_PX }}>
-        <EditorContent editor={editor} />
-      </div>
-      {overflowing && (
-        <button className="entry-toggle" onClick={() => setExpanded(v => !v)}>
-          {expanded ? '收起 ↑' : '展开 ↓'}
-        </button>
+      {source !== null ? (
+        <textarea className="entry-source" value={source} spellCheck={false}
+          placeholder="在这里贴 Markdown，切回渲染模式即生效"
+          onChange={e => setSource(e.target.value)}
+          onKeyDown={e => {
+            // ⌘↩ 快速切回渲染
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); void toRendered() }
+          }} />
+      ) : (
+        <div className={`entry-body ${expanded || !overflowing ? '' : 'collapsed'}`} ref={bodyRef}
+          style={expanded || !overflowing ? undefined : { maxHeight: COLLAPSED_MAX_PX }}>
+          <EditorContent editor={editor} />
+        </div>
       )}
+
+      <div className="entry-foot">
+        <button className="source-toggle" disabled={busy}
+          title={source === null
+            ? '切到源码模式：看到 Markdown 原文，也可以整段粘贴进来'
+            : '切回渲染模式（⌘↩）'}
+          onClick={() => (source === null ? toSource() : toRendered())}>
+          {busy ? '…' : source === null ? '</> 源码' : '✓ 渲染'}
+        </button>
+        {source === null && overflowing && (
+          <button className="entry-toggle" onClick={() => setExpanded(v => !v)}>
+            {expanded ? '收起 ↑' : '展开 ↓'}
+          </button>
+        )}
+      </div>
     </article>
   )
 }

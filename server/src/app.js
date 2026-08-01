@@ -6,7 +6,7 @@ import { authRoutes, requireAuth } from './auth.js'
 import { entriesRoutes } from './entries.js'
 import { imagesRoutes } from './images.js'
 import { citeRoutes } from './cite.js'
-import { exportRoutes } from './export.js'
+import { exportRoutes, convertRoutes } from './export.js'
 
 export function createApp({ db, imagesDir, password, fetchImpl = fetch, webDist = null }) {
   const app = new Hono()
@@ -18,6 +18,7 @@ export function createApp({ db, imagesDir, password, fetchImpl = fetch, webDist 
   imagesRoutes(app, imagesDir)
   citeRoutes(app, db, fetchImpl)
   exportRoutes(app, db, imagesDir)
+  convertRoutes(app)
 
   // 生产模式：由本进程静态托管前端构建产物，单容器部署
   if (webDist) {

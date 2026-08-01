@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { pmToMarkdown, buildFullMarkdown, buildMonthlyMarkdown } from '../src/export.js'
+import { mdToPm } from '../src/mdToPm.js'
 import { parseNotesMarkdown } from '../src/importMd.js'
 import { createDb } from '../src/db.js'
 import { createApp } from '../src/app.js'
@@ -171,5 +172,22 @@ describe('导出格式：整份 / 按月 / 往返', () => {
     ])
     expect(back.asides).toEqual([{ day: '2026-05-08', text: '碎碎念一句' }])
     expect(back.entries[0].markdown).toContain('第一条记录')
+  })
+})
+
+describe('引用块序列化', () => {
+  it('多段引用保持为一整块（空行带 > 前缀）', () => {
+    const doc = { type: 'doc', content: [{ type: 'blockquote', content: [
+      { type: 'paragraph', content: [{ type: 'text', text: '第一段' }] },
+      { type: 'paragraph', content: [{ type: 'text', text: '第二段' }] },
+    ] }] }
+    const md = pmToMarkdown(doc)
+    expect(md).toContain('> 第一段')
+    expect(md).toContain('> 第二段')
+    // 两段之间必须是 '>' 而不是空行，否则会被解析成两个引用
+    expect(md).not.toMatch(/> 第一段\n\n> 第二段/)
+    // 转回去仍是一个 blockquote
+    const back = mdToPm(md)
+    expect(back.content.filter(n => n.type === 'blockquote').length).toBe(1)
   })
 })

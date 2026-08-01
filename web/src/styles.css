@@ -68,13 +68,13 @@ body {
 /* ---------- 条目卡片与编辑器 ---------- */
 .entry-card {
   background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-  padding: 10px var(--card-pad-x) 14px; margin: 10px 0; box-shadow: var(--shadow);
+  padding: 6px var(--card-pad-x) 8px; margin: 10px 0; box-shadow: var(--shadow);
   transition: border-color 0.2s;
 }
 .entry-card:focus-within { border-color: var(--accent); }
 .entry-head {
   display: flex; justify-content: space-between; align-items: center;
-  min-height: 22px; font-size: 12px; color: var(--muted);
+  min-height: 18px; font-size: 12px; color: var(--muted);
 }
 .entry-actions { opacity: 0; transition: opacity 0.15s; display: flex; gap: 2px; }
 .entry-card:hover .entry-actions { opacity: 1; }
@@ -391,11 +391,11 @@ html { scrollbar-color: var(--border) transparent; }
   font-family: var(--mono); font-size: 14px; padding: 3px 8px;
   border: 1px solid var(--accent); border-radius: 6px; background: var(--card); color: var(--fg);
 }
-/* 碎碎念：日期下方单独一行，与卡片左右对齐后再各缩 5%，可多行随内容长高 */
+/* 碎碎念：日期下方单独一行，左右边缘与卡片完全对齐，可多行随内容长高 */
 .day-note {
   display: block; box-sizing: border-box;
-  width: calc(90% - var(--card-indent) * 2);
-  margin: 0 0 6px calc(var(--card-indent) + 5%);
+  width: calc(100% - var(--card-indent) * 2);
+  margin: 0 var(--card-indent) 6px var(--card-indent);
   border: none; background: none; outline: none; resize: none; overflow: hidden;
   font-family: inherit; font-size: 13px; line-height: 1.7;
   color: var(--muted); font-style: italic; padding: 2px 0;
@@ -452,12 +452,39 @@ html { scrollbar-color: var(--border) transparent; }
   content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 56px;
   background: linear-gradient(transparent, var(--card)); pointer-events: none;
 }
+/* 卡片底栏：左边源码/渲染切换，右边展开/收起 */
+.entry-foot {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; margin-top: 2px; min-height: 18px;
+}
 .entry-toggle {
-  display: block; width: 100%; margin-top: 4px; padding: 3px;
+  flex: 1; padding: 2px;
   border: none; background: none; color: var(--muted); cursor: pointer; font-size: 12px;
-  border-top: 1px solid var(--border);
 }
 .entry-toggle:hover { color: var(--accent); }
+
+/* 源码切换：平时隐形，鼠标移到卡片上才出现 */
+.source-toggle {
+  flex: 0 0 auto; padding: 1px 7px; border-radius: 6px;
+  border: 1px solid transparent; background: none;
+  color: var(--muted); cursor: pointer; font-size: 11.5px; font-family: var(--mono);
+  opacity: 0; transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+.entry-card:hover .source-toggle,
+.source-toggle:focus { opacity: 1; }
+.source-toggle:hover { color: var(--accent); border-color: var(--border); }
+.source-toggle:disabled { cursor: default; opacity: 0.5; }
+
+/* 源码模式的编辑区 */
+.entry-source {
+  display: block; width: 100%; box-sizing: border-box;
+  min-height: 140px; resize: vertical;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); color: var(--fg);
+  font-family: var(--mono); font-size: 12.5px; line-height: 1.65;
+  padding: 10px 12px; outline: none;
+}
+.entry-source:focus { border-color: var(--accent); }
 
 /* ---------- 引用块：竖线 + 长引用可折叠 ---------- */
 .ProseMirror blockquote {

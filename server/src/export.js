@@ -2,6 +2,7 @@ import fs from 'node:fs'
 import { Readable } from 'node:stream'
 import archiver from 'archiver'
 import { taskOf } from './entries.js'
+import { mdToPm } from './mdToPm.js'
 
 const MONTH_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const TASK_COLOR_FALLBACK = '#3388dd'
@@ -100,7 +101,11 @@ function block(n, ctx, indent) {
   if (t === 'bulletList') return listItems(n, ctx, indent, () => '- ')
   if (t === 'orderedList') return listItems(n, ctx, indent, i => `${i + 1}. `)
   if (t === 'taskList') return listItems(n, ctx, indent, (i, item) => item.attrs?.checked ? '- [x] ' : '- [ ] ')
-  if (t === 'blockquote') return blocks(n.content || [], ctx, indent).split('\n').map(l => l ? '> ' + l : l).join('\n') + '\n'
+  if (t === 'blockquote') {
+    // 段间空行也要带 '>'，否则 Markdown 会把一段引用读成好几段独立引用
+    const inner = blocks(n.content || [], ctx, indent).replace(/\n+$/, '')
+    return inner.split('\n').map(l => (l ? '> ' + l : '>')).join('\n') + '\n\n'
+  }
   if (t === 'codeBlock') return indent + '```' + (n.attrs?.language || '') + '\n' + text(n) + '\n```\n\n'
   if (t === 'mermaidBlock') return indent + '```mermaid\n' + (n.attrs?.code || '') + '\n```\n\n'
   if (t === 'horizontalRule') return indent + '---\n\n'
@@ -166,6 +171,21 @@ function citeMd(n) {
     ? [a.title, a.year && `(${a.year})`, a.venue && `· ${a.venue}`].filter(Boolean).join(' ')
     : a.url
   return `[${label}](${a.url || ''})`
+}
+
+// 卡片的「源码 / 渲染」切换：两个方向都走服务端这套已测过的转换，
+// 避免前端另写一份解析器导致两边行为不一致。
+export function convertRoutes(app) {
+  app.post('/api/convert/to-markdown', async c => {
+    const body = await c.req.json().catch(() => ({}))
+    const doc = body.content ?? { type: 'doc', content: [] }
+    return c.json({ markdown: pmToMarkdown(doc) })
+  })
+
+  app.post('/api/convert/to-doc', async c => {
+    const body = await c.req.json().catch(() => ({}))
+    return c.json({ content: mdToPm(String(body.markdown ?? '')) })
+  })
 }
 
 export function exportRoutes(app, db, imagesDir) {
