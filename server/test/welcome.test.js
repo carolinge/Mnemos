@@ -22,7 +22,7 @@ describe('欢迎卡片', () => {
     expect(rows.every(r => r.task_id === task.id)).toBe(true)
     // 正文进了全文索引，能被搜到
     expect(rows.some(r => r.text.includes('Typora'))).toBe(true)
-    const hit = db.prepare(`SELECT rowid FROM entries_fts WHERE entries_fts MATCH '"快捷键"'`).all()
+    const hit = db.prepare(`SELECT rowid FROM entries_fts WHERE entries_fts MATCH '"shortcuts"'`).all()
     expect(hit.length).toBeGreaterThan(0)
   })
 

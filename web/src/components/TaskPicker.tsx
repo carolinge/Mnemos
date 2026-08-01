@@ -35,14 +35,14 @@ export function TaskPicker({ value, tasks, onPick }: {
   return (
     <span className="task-picker" ref={boxRef}>
       <button className={`task-chip ${value ? '' : 'empty'}`} onClick={() => setOpen(v => !v)}
-        title="选择任务">
+        title="Assign a task">
         {value
           ? <><i style={{ background: value.color ?? 'var(--muted)' }} />{value.name}</>
-          : '＋ 任务'}
+          : '＋ Task'}
       </button>
       {open && (
         <div className="task-menu">
-          <input ref={inputRef} value={q} placeholder="搜索或新建任务"
+          <input ref={inputRef} value={q} placeholder="Search or create a task"
             onChange={e => setQ(e.target.value)}
             onKeyDown={e => {
               if (e.key === 'Escape') { setOpen(false); return }
@@ -60,14 +60,14 @@ export function TaskPicker({ value, tasks, onPick }: {
             ))}
             {needle && !exact && (
               <button className="task-menu-item create" onClick={() => pick(q.trim())}>
-                ＋ 新建「{q.trim()}」
+                ＋ Create “{q.trim()}”
               </button>
             )}
-            {!matches.length && !needle && <p className="task-menu-empty">还没有任务，输入名字新建</p>}
+            {!matches.length && !needle && <p className="task-menu-empty">No tasks yet — type a name to create one</p>}
           </div>
           {value && (
             <button className="task-menu-item clear" onClick={() => { onPick(''); setOpen(false) }}>
-              清除任务归属
+              Clear task
             </button>
           )}
         </div>

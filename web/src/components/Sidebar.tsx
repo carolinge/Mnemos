@@ -62,7 +62,7 @@ export function Sidebar({ active, onSelect, refreshKey }: {
   if (collapsed) {
     return (
       <nav className="sidebar collapsed">
-        <button className="icon-btn" title="展开边栏" onClick={() => setCollapsed(false)}>»</button>
+        <button className="icon-btn" title="Expand sidebar" onClick={() => setCollapsed(false)}>»</button>
       </nav>
     )
   }
@@ -71,9 +71,9 @@ export function Sidebar({ active, onSelect, refreshKey }: {
     <nav className="sidebar">
       <div className="side-head">
         <button className={`side-item ${active === null ? 'on' : ''}`} onClick={() => onSelect(null)}>
-          <span className="side-name">全部</span>
+          <span className="side-name">All</span>
         </button>
-        <button className="icon-btn" title="收起边栏" onClick={() => setCollapsed(true)}>«</button>
+        <button className="icon-btn" title="Collapse sidebar" onClick={() => setCollapsed(true)}>«</button>
       </div>
 
       {visible.map(p => (
@@ -83,18 +83,18 @@ export function Sidebar({ active, onSelect, refreshKey }: {
           onDragLeave={() => setDragOver(cur => (cur === p.id ? null : cur))}
           onDrop={e => { e.preventDefault(); void dropOn(p.id) }}>
 
-          <span className="side-grip" title="拖动调整顺序" draggable
+          <span className="side-grip" title="Drag to reorder" draggable
             onDragStart={() => { dragId.current = p.id }}
             onDragEnd={() => { dragId.current = null; setDragOver(null) }}>⋮⋮</span>
 
-          <button className="side-dot" title="改颜色"
+          <button className="side-dot" title="Change colour"
             onClick={e => { e.stopPropagation(); setPickerFor(v => (v === p.id ? null : p.id)) }}>
             <i style={{ background: p.color }} />
           </button>
 
           <button className="side-name" onClick={() => onSelect(p.id)}>{p.name}</button>
 
-          <button className="icon-btn side-archive" title="归档这个任务（笔记保留）"
+          <button className="icon-btn side-archive" title="Archive this task (notes are kept)"
             onClick={() => archive(p.id)}>⌫</button>
 
           {pickerFor === p.id && (

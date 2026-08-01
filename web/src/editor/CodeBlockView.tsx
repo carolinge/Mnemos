@@ -2,7 +2,7 @@ import { NodeViewContent, NodeViewWrapper, type NodeViewProps } from '@tiptap/re
 
 // 代码块右上角的语言选择器，仿 Typora。列表与 extensions.ts 里注册给 lowlight 的语言一致。
 export const CODE_LANGUAGES: { value: string; label: string }[] = [
-  { value: '', label: '纯文本' },
+  { value: '', label: 'Plain text' },
   { value: 'python', label: 'Python' },
   { value: 'r', label: 'R' },
   { value: 'matlab', label: 'MATLAB' },
@@ -25,7 +25,7 @@ export function CodeBlockView({ node, updateAttributes, extension }: NodeViewPro
   return (
     <NodeViewWrapper as="div" className="code-block">
       <select className="code-lang" contentEditable={false} value={current}
-        title="选择语言（影响高亮与导出）"
+        title="Language (affects highlighting and export)"
         onChange={e => updateAttributes({ language: e.target.value || null })}>
         {options.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
       </select>

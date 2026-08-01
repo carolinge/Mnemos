@@ -13,61 +13,66 @@ const bullets = (...items) => ({
 })
 const doc = (...content) => ({ type: 'doc', content })
 
-export const WELCOME_TASK = '使用说明'
+export const WELCOME_TASK = 'Getting started'
 
 export const WELCOME_CARDS = [
   doc(
-    h2('欢迎 —— 这是一张卡片'),
-    p('每张卡片属于一个任务（左上角那个标签）。点它可以换任务、搜任务、或者直接输名字新建一个。'),
-    p('一天里可以有任意多张卡片，各归各的任务，互不干扰。点左侧边栏的任务名，就能把这个任务跨越所有日期的记录抽出来单独看。'),
-    line(plain('这些说明卡片你随时可以删掉——鼠标移到卡片上，右上角有 '), code('×'), plain('。')),
+    h2('Welcome — this is a card'),
+    p('Every card belongs to one task (the chip in the top-left corner). Click it to switch tasks, search, or type a new name to create one.'),
+    p('A single day can hold as many cards as you like, each under its own task. Click a task in the left sidebar to pull out everything you ever wrote under it, across all dates.'),
+    line(plain('You can delete these help cards any time — hover a card and use the '), code('×'), plain(' in its corner.')),
   ),
   doc(
-    h2('写字：和 Typora 一样'),
-    p('行首输入这些符号会即时变成对应格式：'),
+    h2('Writing: it behaves like Typora'),
+    p('Type these at the start of a line and they turn into formatting as you go:'),
     bullets(
-      [code('# '), plain(' 一级标题，'), code('## '), plain(' 二级标题')],
-      [code('- '), plain(' 无序列表，'), code('1. '), plain(' 有序列表，'), code('[] '), plain(' 待办')],
-      [code('> '), plain(' 引用，'), code('```'), plain(' 代码块，'), code('---'), plain(' 分割线')],
-      [code('$E=mc^2$'), plain(' 行内公式，'), code('$$'), plain(' 独立公式块')],
-      [code('```mermaid'), plain(' 流程图（加空格触发）')],
+      [code('# '), plain(' heading 1, '), code('## '), plain(' heading 2 (up to 6)')],
+      [code('- '), plain(' bullet list, '), code('1. '), plain(' numbered list, '), code('[] '), plain(' checkbox')],
+      [code('> '), plain(' quote, '), code('```'), plain(' code block, '), code('---'), plain(' divider')],
+      [code('$E=mc^2$'), plain(' inline maths, '), code('$$'), plain(' display maths')],
+      [code('```mermaid'), plain(' flowchart (add a space to trigger it)')],
     ),
-    p('选中文字会浮出格式条（粗体/斜体/行内代码/高亮/链接）；空行上会浮出插入条（表格、代码、待办、图片、引用、嵌入、流程图）。'),
+    p('Select text and a formatting bar appears (bold, italic, inline code, highlight, link). On an empty line an insert bar appears (table, code, todo, image, citation, embed, diagram).'),
+    line(plain('Prefer raw Markdown? Hover a card and hit '), code('</> Source'), plain(' in the bottom-left to edit — or paste — the Markdown behind it.')),
   ),
   doc(
-    h2('快捷键'),
+    h2('Keyboard shortcuts'),
+    p('These follow Typora\u2019s official key map, so your muscle memory carries over.'),
     bullets(
-      [code('Ctrl/Cmd + +'), plain(' 或 '), code('='), plain('　标题升一级（正文 → H1）')],
-      [code('Ctrl/Cmd + -'), plain('　标题降一级（H1 → H2 → H3 → 正文）')],
-      [code('Tab'), plain(' / '), code('Shift + Tab'), plain('　列表内缩进 / 反缩进')],
-      [code('Ctrl/Cmd + Shift + ['), plain('　切换有序列表')],
-      [code('Ctrl/Cmd + Shift + ]'), plain('　切换无序列表')],
-      [code('Ctrl/Cmd + K'), plain('　命令面板：搜正文、输日期跳转、输任务名切视图')],
-    ),
-  ),
-  doc(
-    h2('图片、文献、AI 生成的内容'),
-    bullets(
-      '截图直接 Ctrl+V 粘进来就会上传；拖动图片右下角的圆点改大小，点图片全屏看原图。',
-      '粘贴 DOI / arXiv / PubMed 链接，会自动抓标题作者年份，变成一张引用卡片。抓不到就保持普通链接，不会卡住你写字。',
-      '从 AI 对话里复制带格式的回答粘进来 → 变成可继续编辑的正文；粘贴带 <script> 的完整 HTML → 变成沙箱里的嵌入块，图表能动，可调高度、折叠、看源码。',
+      [code('Cmd/Ctrl + 1…6'), plain('  heading level, '), code('Cmd/Ctrl + 0'), plain('  back to body text')],
+      [code('Cmd/Ctrl + +'), plain(' / '), code('-'), plain('  promote / demote the heading')],
+      [code('Cmd/Ctrl + K'), plain('  insert link')],
+      [code('Cmd/Ctrl + Shift + K'), plain('  code block  ·  '), code('Cmd/Ctrl + Shift + `'), plain('  inline code')],
+      [code('Cmd/Ctrl + Shift + [ / ]'), plain('  numbered / bullet list')],
+      [code('Cmd/Ctrl + Shift + Q'), plain('  quote  ·  '), code('Cmd/Ctrl + T'), plain('  table')],
+      [code('Cmd/Ctrl + Shift + I'), plain('  image  ·  '), code('Cmd/Ctrl + Shift + M'), plain('  maths block')],
+      [code('Tab'), plain(' / '), code('Shift + Tab'), plain('  indent / outdent inside a list')],
+      [code('Cmd/Ctrl + P'), plain('  command palette: search text, jump to a date, filter by task')],
     ),
   ),
   doc(
-    h2('日期与年份'),
+    h2('Images, references and AI output'),
     bullets(
-      '打开就落在今天，光标就位，直接打字。停笔一秒自动保存（右上角圆点变绿）。',
-      '补以前的笔记：点日期标头，选一个过去的日期，这一天的卡片就整体搬过去。',
-      '双击日期标头，可以给这一天写一句碎碎念（小字、默认隐藏，只有你双击才看得到）。',
-      '年份是可折叠的大标题，点一下收起一整年。',
-      '右边缘那条细轨可以拖动，快速跳到任意月份；有记录的日子上有小蓝点，会自动吸附。',
+      'Paste a screenshot with Ctrl+V and it uploads itself. Images sit inline, so several fit on one line and wrap when they run out of room. Hover one to drag it elsewhere, resize it, or remove it; click it for the full-size view.',
+      'Paste a DOI / arXiv / PubMed link and the title, authors, year and journal are fetched into a compact citation card. If the lookup fails it stays an ordinary link — it never blocks your typing.',
+      'Copy a formatted answer out of an AI chat and it becomes editable text. Paste a full HTML artifact with <script> in it and it becomes a sandboxed embed instead: charts still animate, and you can resize, collapse or inspect the source.',
     ),
   ),
   doc(
-    h2('你的数据'),
-    p('所有笔记在一个 SQLite 文件里，图片在旁边的文件夹里，拷走就是完整备份。'),
-    line(plain('顶栏的 '), bold('⤓'), plain(' 可以导出：一整份 Markdown（和 Typora 格式一致，能直接打开）、按月拆分的多个文件、或者可打印成 PDF 的页面。')),
-    p('导出的 Markdown 能被原样导回来 —— 数据永远是你的，不锁在这个软件里。'),
+    h2('Days and years'),
+    bullets(
+      'You land on today with the cursor ready. Stop typing for a second and it saves itself (the dot in the toolbar turns green).',
+      'Backfilling an old note: click the date heading and pick another date, or use “＋ New day” under any day.',
+      'Next to each date is a “＋ Note” button for a one-line (or many-line) note about the day itself. The 💭 button in the toolbar hides or shows all of them at once.',
+      'Years are collapsible headings — click one to fold a whole year away.',
+      'The thin rail on the right edge is a scrubber: drag it to fly to any month. Days with notes show a blue dot and the scrubber snaps to them.',
+    ),
+  ),
+  doc(
+    h2('Your data'),
+    p('Every note lives in one SQLite file with the images in a folder beside it. Copy that folder and you have a complete backup.'),
+    line(plain('The '), bold('⤓'), plain(' button exports three ways: one single Markdown file (Typora opens it as-is), one file per month, or a print-ready page you can save as PDF.')),
+    p('Exported Markdown can be imported straight back in — your notes are never locked inside this app.'),
   ),
 ]
 

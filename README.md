@@ -1,88 +1,136 @@
 # Mnemos
 
-> 代码、数据库文件与部署配置里仍沿用早期代号 `parchment`（改名会让已有的
-> `parchment.db` 对不上，所以没有一并动）。功能不受影响。
+> The code, the database file and the deploy config still use the early codename
+> `parchment`. Renaming them would orphan existing `parchment.db` files, so they
+> were left alone. Nothing about the app depends on the name.
 
-给科研工作者的极简网页笔记本。打开就是今天，往下写；写完的东西按日期成流、按任务成线。
+A deliberately small web notebook for researchers. It opens on today with the cursor
+ready; what you write flows by date and threads by task.
 
-为什么不是 Markdown 编辑器：科研笔记里塞的不只是文字——截图要能随手贴、图要能拖着改大小、文献只想丢个链接进去、AI 生成的图表和网页要能原样嵌进来。Parchment 把这些都当一等公民，而不是附件。
+Why not just a Markdown editor: research notes are not only prose. Screenshots need to go
+in without ceremony, figures need to be resized by hand, a paper is often just a link you
+want to drop in, and the charts an AI hands you should stay alive. Mnemos treats all of
+that as first-class content rather than attachments.
 
-## 它能做什么
+## What it does
 
-- **时间流写作**：打开落在今天，光标就位。向上滚动加载历史，日期标头吸顶。
-- **一张卡片一个任务**：每天可以有很多张卡片，各自归属一个任务（左上角选，也可以在正文里敲 `#任务名 ` 直接指定）。点左侧任务名，抽出这个任务跨越所有日期的完整时间线——同时推进十来个课题时，这是最要紧的一件事。
-- **每天一句碎碎念**：日期旁边可以写一句当天的心情或提要，默认收起，顶栏 💭 一键全局显隐。
-- **所见即所得**：`## ` 变标题、`- ` 变列表、`**粗**` 变粗体、` ``` ` 开代码块、`$E=mc^2$` 渲染公式。选中文字浮出格式条，空行浮出插入条，代码块右上角可选语言。
-- **图片自由**：截图 Ctrl+V 直接插入并上传，拖右下角改大小（存百分比，刷新保持），点击全屏看原图。服务器按 `年/月` 归档、按内容去重。
-- **文献引用**：粘 DOI / arXiv / PubMed 链接，自动抓标题、作者、年份、期刊，变成一张紧凑卡片。抓不到就老实保持普通链接，绝不卡住你写字。
-- **AI 内容直接粘**：粘贴带格式的 AI 回答 → 变成可继续编辑的正文；粘贴带脚本的交互式 artifact → 进沙箱 iframe 原样渲染（图表能动），可调高度、折叠、看源码、转纯文本。
-- **流程图与公式**：` ```mermaid ` 画流程图（懒加载，不拖慢首屏），KaTeX 渲染行内与块级公式。
-- **Typora 快捷键**：⌘1–⌘6 标题、⌘K 链接、⌘⇧K 代码块、⌘⇧` 行内代码、⌘T 表格、⌘⇧Q 引用、⌘⇧I 图片、⌘+/⌘- 升降标题级⋯⋯按 Typora 官方键位表实现，肌肉记忆不用重学。
-- **找得回来**：⌘P 呼出命令面板——搜正文（中英文都行）、输 `3月12` 跳日期、输任务名切视图。右缘时间条可拖动，吸附到有记录的日子。
-- **搬家友好**：旧的 Typora 日记（`##### Mar 12th` 这类格式）可以整份导入，日期、任务归属、碎碎念都会还原成结构化卡片。
-- **断网不丢字**：每次输入先写本地草稿，网络恢复自动补传。右上角圆点显示保存状态。
-- **数据是你的**：三种导出——整份单个 Markdown、按月拆分、可直接打印成 PDF 的排版页。所有数据在一个目录里，拷走就是备份。
+- **A timeline you write into.** Opens on today, cursor placed. Scroll up to load history;
+  date headings stick to the top as you go.
+- **One card, one task.** A day holds as many cards as you like, each assigned to a single
+  task (pick it in the card's corner, or type `#taskname` in the body). Click a task in the
+  sidebar to pull out everything under it across every date — the thing that matters most
+  when ten projects are running at once. Tasks can be reordered by dragging and given
+  their own colour.
+- **A note per day.** One line (or several) about the day itself, sitting under the date.
+  Hidden by default; the 💭 button toggles them all.
+- **WYSIWYG that behaves.** `## ` becomes a heading, `- ` a list, `**bold**` bold, ` ``` `
+  a code block, `$E=mc^2$` rendered maths. Selected text raises a formatting bar, an empty
+  line raises an insert bar, and code blocks carry a language picker.
+- **Raw Markdown when you want it.** Every card has a `</> Source` toggle: read or edit the
+  Markdown behind it, or paste a chunk in from somewhere else and switch back.
+- **Typora's keyboard map.** ⌘1–⌘6 headings, ⌘K link, ⌘⇧K code block, ⌘⇧\` inline code,
+  ⌘T table, ⌘⇧Q quote, ⌘⇧I image, ⌘+/⌘- promote and demote. Taken from Typora's published
+  shortcut table, so nothing has to be relearned.
+- **Images that behave like text.** Ctrl+V a screenshot and it uploads itself. Images are
+  inline, so several share a line and wrap when they run out of room; hover one to drag it
+  somewhere else, resize it or remove it. The server files them under `year/month` and
+  de-duplicates by content.
+- **References from a link.** Paste a DOI / arXiv / PubMed URL and the title, authors, year
+  and journal arrive as a compact citation card. When the lookup fails it stays an ordinary
+  link rather than blocking you.
+- **AI output, pasted whole.** A formatted answer becomes editable text; a full HTML
+  artifact with scripts becomes a sandboxed embed that still animates, and can be resized,
+  collapsed, or inspected.
+- **Diagrams and maths.** ` ```mermaid ` draws a flowchart (loaded lazily, so it never slows
+  the first paint); KaTeX renders inline and display maths.
+- **Findable later.** ⌘P opens a command palette: search the text (Chinese and English both
+  work), type a date to jump there, type a task to filter. The rail on the right edge
+  scrubs through months and snaps to days that have notes.
+- **Easy to move into.** Old Typora journals (the `##### Mar 12th` shape) import wholesale —
+  dates, task attribution and daily notes all come back as structured cards.
+- **Nothing lost when the network is.** Every keystroke is drafted locally first and
+  re-sent when the connection returns. The dot in the toolbar says which state you're in.
+- **The data is yours.** Three exports: one single Markdown file, one file per month, or a
+  print-ready page you can save as PDF. Everything lives in one directory — copy it and
+  you have a backup.
 
-## 本地开发
+## Local development
 
-需要 Node 22+。两个终端：
+Node 22+. Two terminals:
 
 ```bash
-# 终端 1：后端（端口 8787）
+# Terminal 1 — backend on :8787
 cd server && npm install && ACCESS_PASSWORD=dev npm run dev
 
-# 终端 2：前端（Vite 开发服务器，自动代理 /api 与 /images）
+# Terminal 2 — Vite dev server, proxies /api and /images to the backend
 cd web && npm install && npm run dev
 ```
 
-浏览器打开 Vite 给出的地址，密码填 `dev`。
+Open the URL Vite prints and log in with `dev`.
 
-跑测试：
+Tests:
 
 ```bash
-cd server && npx vitest run   # 后端 41 项
-cd web && npx vitest run      # 前端 61 项
+cd server && npx vitest run   # 83
+cd web && npx vitest run      # 70
 ```
 
-## 部署到 fly.io
+## Deploying to fly.io
 
-单容器，SQLite + 图片都在挂载卷 `/data` 里。
+One container; SQLite and the images both live on the mounted volume at `/data`.
 
 ```bash
-fly launch --no-deploy                      # 确认 app 名与区域，沿用仓库里的 fly.toml
-fly volumes create parchment_data --size 3  # 3 GB 起步，之后可扩
-fly secrets set ACCESS_PASSWORD='你的访问密码'
+fly launch --no-deploy                      # confirm app name and region, keep the fly.toml here
+fly volumes create parchment_data --size 3  # 3 GB to start, grow it later
+fly secrets set ACCESS_PASSWORD='your-password'
 fly deploy
 ```
 
-部署完打开 `https://<你的-app>.fly.dev`，输密码即可用。
+Then open `https://<your-app>.fly.dev` and enter the password.
 
-`auto_stop_machines` 已开启：没人访问时机器会停，产生的费用极低；再次访问自动唤醒（首次冷启动约 1-2 秒）。
+`auto_stop_machines` is on, so the machine sleeps when nobody is using it and wakes on the
+next request (a second or two of cold start).
 
-### 本地 Docker 试跑
+### Trying it in Docker
 
 ```bash
 docker build -t parchment .
 docker run --rm -p 8787:8787 -e ACCESS_PASSWORD=dev -v $PWD/.data:/data parchment
 ```
 
-（若不想装 Docker，也可以直接以生产模式在本机跑：`cd web && npm run build`，然后
-`cd server && NODE_ENV=production ACCESS_PASSWORD=dev WEB_DIST=../web/dist npm start`。）
+Without Docker you can run the production build directly: `cd web && npm run build`, then
+`cd server && NODE_ENV=production ACCESS_PASSWORD=dev WEB_DIST=../web/dist npm start`.
 
-## 数据与备份
+## Data and backups
 
-一切都在 `/data` 下：`parchment.db`（SQLite，含笔记、项目、引用缓存）和 `images/年/月/`（原图，不压缩）。
+Everything sits under `/data`: `parchment.db` (SQLite — notes, tasks, citation cache) and
+`images/year/month/` (originals, uncompressed).
 
 ```bash
-fly ssh sftp get /data/parchment.db ./backup/parchment.db   # 拉数据库
+fly ssh sftp get /data/parchment.db ./backup/parchment.db
 ```
 
-或者直接用页面右上角的 ⤓ 导出完整 zip（Markdown + 图片 + 嵌入的 HTML），任何 Markdown 编辑器都能打开——不锁定你的内容。
+Or use ⤓ in the toolbar for a full zip (Markdown + images + embedded HTML) that any editor
+can open.
 
-## 技术栈
+## Importing old notes
 
-后端 Hono + better-sqlite3（FTS5 trigram 全文索引，中英文都能搜），前端 Vite + React + TipTap(ProseMirror)，KaTeX 与 Mermaid 按需懒加载。单用户单密码，session 存 HttpOnly cookie。
+```bash
+cd server
+node src/importCli.js --dry old-journal.md    # preview, writes nothing
+node src/importCli.js old-journal.md          # import for real
+```
 
-## 许可
+The parser understands `##### Mar 12th` date headings (including `<span id="260312">`
+anchors), `<font color=...>TASK</font>` markers as task attribution, and loose prose right
+after a date as that day's note. It only ever adds; it never deletes or overwrites.
+
+## Built with
+
+Hono and better-sqlite3 on the server (FTS5 trigram index, so Chinese and English are both
+searchable); Vite, React and TipTap/ProseMirror on the client, with KaTeX and Mermaid
+loaded on demand. Single user, single password, session in an HttpOnly cookie.
+
+## Licence
 
 MIT

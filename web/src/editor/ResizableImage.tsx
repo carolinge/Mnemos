@@ -3,13 +3,14 @@ import { NodeViewWrapper, ReactNodeViewRenderer, type NodeViewProps } from '@tip
 import { useRef } from 'react'
 
 export const ResizableImage = Image.extend({
-  // 行内节点：多张图能排在同一行，放不下自动换行
+  // Inline so several images can sit on one line and wrap when they run out of room.
   inline: true,
   group: 'inline',
+  draggable: true,
   addAttributes() {
     return {
       ...this.parent?.(),
-      width: {   // 百分比宽度，null = 原始
+      width: {   // percentage of the line; null = use the default height instead
         default: null,
         parseHTML: el => {
           const w = (el as HTMLElement).style.width
@@ -22,7 +23,7 @@ export const ResizableImage = Image.extend({
   addNodeView() { return ReactNodeViewRenderer(ImageView) },
 })
 
-function ImageView({ node, updateAttributes, selected }: NodeViewProps) {
+function ImageView({ node, updateAttributes, deleteNode, selected }: NodeViewProps) {
   const wrapRef = useRef<HTMLDivElement | null>(null)
 
   function startResize(e: React.PointerEvent) {
@@ -50,7 +51,15 @@ function ImageView({ node, updateAttributes, selected }: NodeViewProps) {
     <NodeViewWrapper as="span" className={`img-wrap ${selected ? 'selected' : ''}`}
       ref={wrapRef} style={{ width: node.attrs.width ? `${node.attrs.width}%` : undefined }}>
       <img src={node.attrs.src} alt={node.attrs.alt ?? ''} onClick={openLightbox} draggable={false} />
-      <span className="img-handle" onPointerDown={startResize} title="拖动调整大小" />
+
+      {/* data-drag-handle lets ProseMirror drag the node to a new spot in the text */}
+      <span className="img-grip" data-drag-handle contentEditable={false}
+        title="Drag to move this image">⠿</span>
+
+      <button className="img-del" contentEditable={false} title="Remove image"
+        onClick={e => { e.preventDefault(); e.stopPropagation(); deleteNode() }}>×</button>
+
+      <span className="img-handle" onPointerDown={startResize} title="Drag to resize" />
     </NodeViewWrapper>
   )
 }

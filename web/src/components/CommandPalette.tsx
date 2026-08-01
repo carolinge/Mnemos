@@ -35,7 +35,7 @@ export function CommandPalette({ open, onClose, onJumpDay, onSelectProject, proj
       try {
         const r = await api<{ days: DayGroup[] }>(`/api/entries?q=${encodeURIComponent(q)}`)
         setHits(r.days.flatMap(d => d.entries.map(e => ({
-          id: e.id, day: d.day, text: e.text || '(无文本)',
+          id: e.id, day: d.day, text: e.text || '(no text)',
         }))).slice(0, 30))
       } catch { setHits([]) }
     }, 300)
@@ -51,18 +51,18 @@ export function CommandPalette({ open, onClose, onJumpDay, onSelectProject, proj
   return (
     <div className="palette-overlay" onClick={onClose}>
       <div className="palette" onClick={e => e.stopPropagation()}>
-        <input ref={inputRef} value={q} placeholder="搜索笔记 · 输日期跳转 · 输项目名切换"
+        <input ref={inputRef} value={q} placeholder="Search notes · type a date to jump · type a task to filter"
           onChange={e => setQ(e.target.value)}
           onKeyDown={e => { if (e.key === 'Escape') onClose() }} />
         <div className="palette-list">
           {dateHit && (
             <button className="palette-item" onClick={() => { onJumpDay(dateHit); onClose() }}>
-              📅 跳到 {dateHit}
+              📅 Jump to {dateHit}
             </button>
           )}
           {projHits.map(p => (
             <button key={p.id} className="palette-item" onClick={() => { onSelectProject(p.id); onClose() }}>
-              <i className="dot" style={{ background: p.color }} /> 项目：{p.name}
+              <i className="dot" style={{ background: p.color }} /> Task: {p.name}
             </button>
           ))}
           {hits.map(h => (
@@ -72,7 +72,7 @@ export function CommandPalette({ open, onClose, onJumpDay, onSelectProject, proj
             </button>
           ))}
           {!hits.length && !dateHit && !projHits.length && q.trim() && (
-            <p className="palette-empty">没找到 —— 换个词试试</p>
+            <p className="palette-empty">Nothing found — try another word</p>
           )}
         </div>
       </div>

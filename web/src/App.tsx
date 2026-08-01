@@ -52,36 +52,36 @@ export default function App() {
     <div className="app">
       <header className="topbar">
         <span className="export-menu-wrap">
-          <button className="icon-btn" title="导出" onClick={() => setExportOpen(v => !v)}>⤓</button>
+          <button className="icon-btn" title="Export" onClick={() => setExportOpen(v => !v)}>⤓</button>
           {exportOpen && (
             <div className="export-menu" onMouseLeave={() => setExportOpen(false)}>
               <a href="/api/export?format=full" onClick={() => setExportOpen(false)}>
-                整份 Markdown<small>一个文件，可用 Typora 打开</small>
+                Single Markdown<small>One file, opens in Typora</small>
               </a>
               <a href="/api/export?format=monthly" onClick={() => setExportOpen(false)}>
-                按月拆分<small>每月一个 .md</small>
+                Split by month<small>One .md per month</small>
               </a>
               <a href="/api/export?format=print" target="_blank" rel="noreferrer"
                 onClick={() => setExportOpen(false)}>
-                打印 / 存 PDF<small>新标签页打开后 ⌘P</small>
+                Print / save PDF<small>Opens a new tab, then ⌘P</small>
               </a>
             </div>
           )}
         </span>
-        <button className="icon-btn" title="切换主题" onClick={() => {
+        <button className="icon-btn" title="Toggle theme" onClick={() => {
           const cur = document.documentElement.dataset.theme
           const next = cur === 'dark' ? 'light' : 'dark'
           document.documentElement.dataset.theme = next
           localStorage.setItem('theme', next)
         }}>◐</button>
         <button className={`icon-btn ${showAsides ? '' : 'off'}`}
-          title={showAsides ? '隐藏每天的碎碎念' : '显示每天的碎碎念'}
+          title={showAsides ? 'Hide daily notes' : 'Show daily notes'}
           onClick={() => {
             const next = !showAsides
             setShowAsides(next)
             localStorage.setItem('showAsides', next ? 'on' : 'off')
           }}>💭</button>
-        <button className="icon-btn" title="搜索 (⌘P，或不在编辑时按 ⌘K)"
+        <button className="icon-btn" title="Search (⌘P, or ⌘K outside the editor)"
           onClick={() => setPaletteOpen(true)}>🔍</button>
         <SaveDot />
       </header>

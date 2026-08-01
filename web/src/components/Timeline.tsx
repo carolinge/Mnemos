@@ -57,10 +57,10 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
 
   // 新的一天：选个日期，那天就出现一张空卡片等你写（保存后自动排到正确位置）
   function addDay() {
-    const input = window.prompt('新条目的日期（YYYY-MM-DD）', todayStr())
+    const input = window.prompt('Date for the new entry (YYYY-MM-DD)', todayStr())
     if (!input) return
     const day = input.trim()
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) { window.alert('日期格式应为 2026-07-31'); return }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) { window.alert('Date must look like 2026-07-31'); return }
     addComposer(day)
     if (!t.days.some(d => d.day === day)) t.ensureDay(day)
   }
@@ -96,7 +96,7 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
     <div className="timeline" ref={boxRef} onScroll={onScroll}>
       <div ref={topSentinel} />
       {!t.ready && <div className="skeleton"><div /><div /><div /></div>}
-      {!t.hasOlder && t.ready && <p className="flow-edge">— 这里是一切的开始 —</p>}
+      {!t.hasOlder && t.ready && <p className="flow-edge">— the very beginning —</p>}
       {t.days.map(d => {
         const year = d.day.slice(0, 4)
         const yearHead = year !== lastYear ? year : null
@@ -107,7 +107,7 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
             {yearHead && (
               <h1 className="year-head" onClick={() => toggleYear(year)}>
                 <span className="year-caret">{folded ? '▸' : '▾'}</span> {year}
-                {folded && <span className="year-hint">（已折叠，点击展开）</span>}
+                {folded && <span className="year-hint"> (collapsed — click to expand)</span>}
               </h1>
             )}
             {!folded && (
@@ -126,10 +126,10 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
                       onCreated={() => { t.reload(); onTasksChanged?.() }} />
                   ))}
                   <div className="add-row">
-                    <button className="new-entry" title={`在 ${d.day} 下新增一张卡片`}
-                      onClick={() => addComposer(d.day)}>＋ 新条目</button>
-                    <button className="new-day" title="新建另一个日期的卡片（补以前的笔记）"
-                      onClick={addDay}>＋ 新的一天</button>
+                    <button className="new-entry" title={`Add a card under ${d.day}`}
+                      onClick={() => addComposer(d.day)}>＋ New entry</button>
+                    <button className="new-day" title="Create a card on another date (backfill)"
+                      onClick={addDay}>＋ New day</button>
                   </div>
                 </div>
               </section>
@@ -137,7 +137,7 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
           </div>
         )
       })}
-      {t.hasNewer && <button className="load-newer" onClick={() => t.loadNewer()}>加载更新的内容 ↓</button>}
+      {t.hasNewer && <button className="load-newer" onClick={() => t.loadNewer()}>Load newer ↓</button>}
       {showToday && !hasTodayGroup && (
         <section data-day={today}>
           <DayHeader day={today} note="" showAsides={showAsides}
@@ -149,16 +149,16 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
                 onCreated={() => { t.reload(); onTasksChanged?.() }} />
             ))}
             <div className="add-row">
-              <button className="new-entry" title="在今天下新增一张卡片"
-                onClick={() => addComposer(today)}>＋ 新条目</button>
-              <button className="new-day" title="新建另一个日期的卡片（补以前的笔记）"
-                onClick={addDay}>＋ 新的一天</button>
+              <button className="new-entry" title="Add a card under today"
+                onClick={() => addComposer(today)}>＋ New entry</button>
+              <button className="new-day" title="Create a card on another date (backfill)"
+                onClick={addDay}>＋ New day</button>
             </div>
           </div>
         </section>
       )}
       {awayFromBottom && (
-        <button className="back-today" title="回到今天" aria-label="回到今天" onClick={() => {
+        <button className="back-today" title="Back to today" aria-label="Back to today" onClick={() => {
           if (anchor) onExitAnchor()
           else boxRef.current!.scrollTo({ top: boxRef.current!.scrollHeight, behavior: 'smooth' })
         }}>

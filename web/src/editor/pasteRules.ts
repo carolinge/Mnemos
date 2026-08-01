@@ -17,7 +17,7 @@ async function insertImages(view: EditorView, files: File[]) {
       const node = view.state.schema.nodes.image.create({ src: url })
       view.dispatch(view.state.tr.replaceSelectionWith(node).scrollIntoView())
     } catch {
-      window.alert('图片上传失败，请重试')
+      window.alert('Image upload failed — please try again')
     }
   }
 }
@@ -65,8 +65,8 @@ export const PasteRules = Extension.create({
             // 内容型：交给默认粘贴（可编辑），但给一个「改为嵌入块」的逃生口
             window.dispatchEvent(new CustomEvent('parchment:toast', {
               detail: {
-                message: '已作为正文粘贴',
-                actionLabel: '改为嵌入块',
+                message: 'Pasted as editable text',
+                actionLabel: 'Keep as embed',
                 onAction: () => {
                   undo(view.state, view.dispatch)
                   insertHtmlEmbed(view, html)

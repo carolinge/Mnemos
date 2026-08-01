@@ -55,10 +55,10 @@ function EmbedView({ node, updateAttributes, deleteNode, editor, getPos }: NodeV
       <div className="embed-bar" contentEditable={false}>
         <span className="embed-tag">HTML</span>
         <span className="embed-actions">
-          <button onClick={() => updateAttributes({ collapsed: !a.collapsed })}>{a.collapsed ? '展开' : '折叠'}</button>
-          <button onClick={() => setShowSource(v => !v)}>{showSource ? '预览' : '源码'}</button>
-          <button onClick={toPlainText}>转纯文本</button>
-          <button onClick={() => deleteNode()}>删除</button>
+          <button onClick={() => updateAttributes({ collapsed: !a.collapsed })}>{a.collapsed ? 'Expand' : 'Collapse'}</button>
+          <button onClick={() => setShowSource(v => !v)}>{showSource ? 'Preview' : 'Source'}</button>
+          <button onClick={toPlainText}>To text</button>
+          <button onClick={() => deleteNode()}>Remove</button>
         </span>
       </div>
       {!a.collapsed && (showSource ? (
@@ -67,8 +67,8 @@ function EmbedView({ node, updateAttributes, deleteNode, editor, getPos }: NodeV
       ) : (
         <>
           <iframe className="embed-frame" sandbox="allow-scripts" srcDoc={a.html}
-            style={{ height: a.height }} title="嵌入内容" />
-          <div className="embed-resize" onPointerDown={startHeightDrag} title="拖动调整高度" />
+            style={{ height: a.height }} title="Embedded content" />
+          <div className="embed-resize" onPointerDown={startHeightDrag} title="Drag to resize height" />
         </>
       ))}
     </NodeViewWrapper>

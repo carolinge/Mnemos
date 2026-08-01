@@ -58,7 +58,7 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
   function promptLink() {
     const ed = editorRef.current
     if (!ed) return
-    const url = window.prompt('链接地址', ed.getAttributes('link').href ?? 'https://')
+    const url = window.prompt('Link URL', ed.getAttributes('link').href ?? 'https://')
     if (url === null) return
     if (!url.trim()) { ed.chain().focus().unsetLink().run(); return }
     ed.chain().focus().setLink({ href: url.trim() }).run()
@@ -118,7 +118,7 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
       })
       setSource(r.markdown)
     } catch {
-      window.alert('转换源码失败，请检查网络')
+      window.alert('Could not switch to source — check your connection')
     } finally { setBusy(false) }
   }
 
@@ -135,14 +135,14 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
       setSource(null)
       autosave.schedule()
     } catch {
-      window.alert('解析 Markdown 失败，源码已保留，可修改后重试')
+      window.alert('Could not parse the Markdown — your source is kept, fix it and try again')
     } finally { setBusy(false) }
   }
 
   async function remove() {
     const id = autosave.entryIdRef.current
     if (!id) return
-    if (!window.confirm('删除这个条目？')) return
+    if (!window.confirm('Delete this card?')) return
     await api(`/api/entries/${id}`, { method: 'DELETE' })
     onDeleted?.(id)
   }
@@ -157,12 +157,12 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
             autosave.schedule()
           }} />
           {task?.id && (
-            <button className="task-goto" title="只看这个任务"
+            <button className="task-goto" title="Show only this task"
               onClick={() => onTaskClick?.(task.id!)}>↗</button>
           )}
         </span>
         <span className="entry-actions">
-          {id && <button className="icon-btn" title="删除这张卡片" onClick={remove}>×</button>}
+          {id && <button className="icon-btn" title="Delete this card" onClick={remove}>×</button>}
         </span>
       </div>
       {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 120 }}>
@@ -175,39 +175,39 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
             onClick={() => editor.chain().focus().toggleCode().run()}>{'<>'}</button>
           <button className={editor.isActive('highlight') ? 'on' : ''}
             onClick={() => editor.chain().focus().toggleHighlight().run()}>H</button>
-          <button title="链接 (⌘K)" onClick={promptLink}>🔗</button>
+          <button title="Link (⌘K)" onClick={promptLink}>🔗</button>
         </div>
       </BubbleMenu>}
       {editor && <FloatingMenu editor={editor} tippyOptions={{ duration: 120 }}>
         <div className="menu-bar">
-          <button title="二级标题 (⌘2)"
+          <button title="Heading 2 (⌘2)"
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}>H2</button>
-          <button title="表格 (⌘T)"
-            onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>表格</button>
-          <button title="代码块 (⌘⇧K)"
-            onClick={() => editor.chain().focus().toggleCodeBlock().run()}>代码</button>
-          <button title="待办清单"
-            onClick={() => editor.chain().focus().toggleTaskList().run()}>待办</button>
-          <button title="插入图片，可多选 (⌘⇧I)" onClick={pickImage}>图片</button>
+          <button title="Table (⌘T)"
+            onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}>Table</button>
+          <button title="Code block (⌘⇧K)"
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}>Code</button>
+          <button title="Task list"
+            onClick={() => editor.chain().focus().toggleTaskList().run()}>Todo</button>
+          <button title="Insert images (⌘⇧I)" onClick={pickImage}>Image</button>
           <button onClick={() => {
-            const url = window.prompt('文献链接（DOI / arXiv / PubMed）')
+            const url = window.prompt('Reference link (DOI / arXiv / PubMed)')
             if (url) {
               import('../editor/pasteRules').then(({ insertCitation }) => insertCitation(editor.view, url.trim()))
             }
-          }}>引用</button>
+          }}>Cite</button>
           <button onClick={() => {
-            const html = window.prompt('粘贴 HTML 源码')
+            const html = window.prompt('Paste HTML source')
             if (html) {
               import('../editor/pasteRules').then(({ insertHtmlEmbed }) => insertHtmlEmbed(editor.view, html))
             }
-          }}>嵌入</button>
+          }}>Embed</button>
           <button onClick={() => editor.chain().focus()
-            .insertContent({ type: 'mermaidBlock', attrs: { code: '' } }).run()}>流程图</button>
+            .insertContent({ type: 'mermaidBlock', attrs: { code: '' } }).run()}>Diagram</button>
         </div>
       </FloatingMenu>}
       {source !== null ? (
         <textarea className="entry-source" value={source} spellCheck={false}
-          placeholder="在这里贴 Markdown，切回渲染模式即生效"
+          placeholder="Paste Markdown here — switch back to rendered view to apply"
           onChange={e => setSource(e.target.value)}
           onKeyDown={e => {
             // ⌘↩ 快速切回渲染
@@ -223,14 +223,14 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
       <div className="entry-foot">
         <button className="source-toggle" disabled={busy}
           title={source === null
-            ? '切到源码模式：看到 Markdown 原文，也可以整段粘贴进来'
-            : '切回渲染模式（⌘↩）'}
+            ? 'Switch to source: see the raw Markdown, or paste some in'
+            : 'Back to rendered view (⌘↩)'}
           onClick={() => (source === null ? toSource() : toRendered())}>
-          {busy ? '…' : source === null ? '</> 源码' : '✓ 渲染'}
+          {busy ? '…' : source === null ? '</> Source' : '✓ Rendered'}
         </button>
         {source === null && overflowing && (
           <button className="entry-toggle" onClick={() => setExpanded(v => !v)}>
-            {expanded ? '收起 ↑' : '展开 ↓'}
+            {expanded ? 'Collapse ↑' : 'Expand ↓'}
           </button>
         )}
       </div>

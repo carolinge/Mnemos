@@ -46,7 +46,7 @@ export function DayHeader({ day, note, showAsides, onChangeDay, onNoteSaved }: {
             if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
           }} />
       ) : (
-        <button className="day-date" title="点击改成别的日期（补以前的笔记）"
+        <button className="day-date" title="Click to change the date (for backfilling notes)"
           onClick={() => setEditingDate(true)}>
           {fmtDay(day)}
         </button>
@@ -54,19 +54,19 @@ export function DayHeader({ day, note, showAsides, onChangeDay, onNoteSaved }: {
 
       {showAsides && (
         <button className="day-note-btn"
-          title={note ? '编辑今天的碎碎念' : '给这一天写句碎碎念'}
+          title={note ? 'Edit note' : 'Add a note for this day'}
           onClick={() => setOpenNote(v => !v)}>
-          {note ? '✎' : '＋碎碎念'}
+          {note ? '✎ Note' : '＋ Note'}
         </button>
       )}
-      {!showAsides && note && <span className="day-note-dot" title="这天有碎碎念（已被顶栏开关隐藏）" />}
+      {!showAsides && note && <span className="day-note-dot" title="This day has a note (hidden by the toolbar toggle)" />}
 
     </div>
 
     {/* 碎碎念单独占一行，与下面的卡片对齐，可写多行（随内容长高） */}
     {noteVisible && (
       <textarea className="day-note" value={draft} rows={1}
-        placeholder="今天的碎碎念…" autoFocus={openNote && !note}
+        placeholder="Note:" autoFocus={openNote && !note}
         ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px` } }}
         onChange={e => {
           e.target.style.height = 'auto'

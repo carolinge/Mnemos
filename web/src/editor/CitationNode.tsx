@@ -67,7 +67,7 @@ function CitationView({ node }: NodeViewProps) {
   return (
     <NodeViewWrapper as="div" className="cite-card" data-status={a.status}>
       <a href={a.url} target="_blank" rel="noreferrer" className="cite-title plain">{a.url}</a>
-      {a.status === 'pending' && <span className="cite-meta">抓取文献信息…</span>}
+      {a.status === 'pending' && <span className="cite-meta">Fetching reference…</span>}
     </NodeViewWrapper>
   )
 }

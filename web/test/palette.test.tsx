@@ -35,6 +35,6 @@ describe('CommandPalette', () => {
   it('输入日期样式出现跳转项', async () => {
     render(<CommandPalette open onClose={() => {}} onJumpDay={() => {}} onSelectProject={() => {}} projects={[]} />)
     fireEvent.change(screen.getByRole('textbox'), { target: { value: '2026-03-12' } })
-    await waitFor(() => expect(screen.getByText(/跳到 2026-03-12/)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/Jump to 2026-03-12/)).toBeInTheDocument())
   })
 })

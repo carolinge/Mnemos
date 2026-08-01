@@ -52,7 +52,7 @@ export function buildExtensions(opts: ExtensionOpts) {
     CodeBlockLowlight.extend({
       addNodeView() { return ReactNodeViewRenderer(CodeBlockView) },
     }).configure({ lowlight }),
-    Placeholder.configure({ placeholder: opts.placeholder ?? '写点什么… # 打项目标签' }),
+    Placeholder.configure({ placeholder: opts.placeholder ?? 'Write something… #task to assign' }),
     Link.configure({ autolink: true, openOnClick: false }),
     Highlight,
     TaskList,

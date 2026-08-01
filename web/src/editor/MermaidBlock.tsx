@@ -52,10 +52,10 @@ function MermaidView({ node, updateAttributes }: NodeViewProps) {
   if (editing) {
     return (
       <NodeViewWrapper as="div" className="mermaid-block editing" contentEditable={false}>
-        <textarea autoFocus rows={6} value={draft} placeholder={'graph TD\n  想法 --> 实验\n  实验 --> 论文'}
+        <textarea autoFocus rows={6} value={draft} placeholder={'graph TD\n  idea --> experiment\n  experiment --> paper'}
           onChange={e => setDraft(e.target.value)} />
         <div className="mermaid-actions">
-          <button onClick={() => { updateAttributes({ code: draft }); setEditing(false) }}>完成</button>
+          <button onClick={() => { updateAttributes({ code: draft }); setEditing(false) }}>Done</button>
         </div>
       </NodeViewWrapper>
     )
@@ -64,7 +64,7 @@ function MermaidView({ node, updateAttributes }: NodeViewProps) {
     <NodeViewWrapper as="div" className="mermaid-block" contentEditable={false}
       onDoubleClick={() => { setDraft(code); setEditing(true) }}>
       {err
-        ? <div className="mermaid-err"><p>流程图语法错误（双击修改）</p><pre>{code}</pre></div>
+        ? <div className="mermaid-err"><p>Diagram syntax error — double-click to edit</p><pre>{code}</pre></div>
         : <div className="mermaid-svg" dangerouslySetInnerHTML={{ __html: svg }} />}
     </NodeViewWrapper>
   )

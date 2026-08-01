@@ -16,13 +16,13 @@ export function Login({ onDone }: { onDone: () => void }) {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={submit}>
-        <h1>Parchment</h1>
+        <h1>Mnemos</h1>
         <input
-          type="password" autoFocus value={pw} placeholder="访问密码"
+          type="password" autoFocus value={pw} placeholder="Access password"
           onChange={e => { setPw(e.target.value); setErr(false) }}
         />
-        {err && <p className="login-err">密码不对</p>}
-        <button type="submit">进入</button>
+        {err && <p className="login-err">Wrong password</p>}
+        <button type="submit">Enter</button>
       </form>
     </div>
   )
