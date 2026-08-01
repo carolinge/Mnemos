@@ -33,6 +33,7 @@ export function DayHeader({ day, note, showAsides, onChangeDay, onNoteSaved }: {
   const noteVisible = showAsides && (openNote || Boolean(note))
 
   return (
+    <div className="day-block">
     <div className="day-head">
       {editingDate ? (
         <input className="day-date-input" type="date" defaultValue={day} autoFocus
@@ -60,11 +61,20 @@ export function DayHeader({ day, note, showAsides, onChangeDay, onNoteSaved }: {
       )}
       {!showAsides && note && <span className="day-note-dot" title="这天有碎碎念（已被顶栏开关隐藏）" />}
 
-      {noteVisible && (
-        <input className="day-note" value={draft} placeholder="今天的碎碎念…" autoFocus={openNote && !note}
-          onChange={e => saveNote(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Escape') (e.target as HTMLInputElement).blur() }} />
-      )}
+    </div>
+
+    {/* 碎碎念单独占一行，与下面的卡片对齐，可写多行（随内容长高） */}
+    {noteVisible && (
+      <textarea className="day-note" value={draft} rows={1}
+        placeholder="今天的碎碎念…" autoFocus={openNote && !note}
+        ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px` } }}
+        onChange={e => {
+          e.target.style.height = 'auto'
+          e.target.style.height = `${e.target.scrollHeight}px`
+          saveNote(e.target.value)
+        }}
+        onKeyDown={e => { if (e.key === 'Escape') (e.target as HTMLTextAreaElement).blur() }} />
+    )}
     </div>
   )
 }

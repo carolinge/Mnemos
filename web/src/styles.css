@@ -95,7 +95,8 @@ body {
 .menu-bar button:hover { background: var(--border); }
 .menu-bar button.on { background: var(--accent); color: #fff; }
 
-.ProseMirror { outline: none; min-height: 28px; }
+/* 正文字号与边栏任务名一致，整页视觉更齐 */
+.ProseMirror { outline: none; min-height: 28px; font-size: 14px; }
 .ProseMirror p { margin: 0.4em 0; }
 .ProseMirror h1, .ProseMirror h2, .ProseMirror h3 {
   font-family: var(--serif); line-height: 1.35; margin: 0.8em 0 0.3em;
@@ -142,7 +143,7 @@ body {
 .timeline > div,
 .timeline > section,
 .timeline > p,
-.timeline > button,
+.timeline > button:not(.back-today),
 .timeline .year-head,
 .timeline .skeleton {
   width: 100%;
@@ -390,9 +391,14 @@ html { scrollbar-color: var(--border) transparent; }
   font-family: var(--mono); font-size: 14px; padding: 3px 8px;
   border: 1px solid var(--accent); border-radius: 6px; background: var(--card); color: var(--fg);
 }
+/* 碎碎念：日期下方单独一行，与卡片左右对齐后再各缩 5%，可多行随内容长高 */
 .day-note {
-  flex: 1; border: none; background: none; outline: none;
-  font-size: 13px; color: var(--muted); font-style: italic; padding: 2px 0;
+  display: block; box-sizing: border-box;
+  width: calc(90% - var(--card-indent) * 2);
+  margin: 0 0 6px calc(var(--card-indent) + 5%);
+  border: none; background: none; outline: none; resize: none; overflow: hidden;
+  font-family: inherit; font-size: 13px; line-height: 1.7;
+  color: var(--muted); font-style: italic; padding: 2px 0;
   border-bottom: 1px dashed transparent;
 }
 .day-note:focus { border-bottom-color: var(--border); }
@@ -554,3 +560,33 @@ html { scrollbar-color: var(--border) transparent; }
   padding: 1px 4px; cursor: pointer; opacity: 0; transition: opacity 0.15s;
 }
 .code-block:hover .code-lang, .code-lang:focus { opacity: 1; }
+
+/* ---------- 边栏：拖动手柄、颜色选择 ---------- */
+.side-item { position: relative; }
+.side-grip {
+  flex: 0 0 auto; cursor: grab; user-select: none;
+  color: var(--muted); font-size: 11px; letter-spacing: -2px;
+  padding: 0 2px 0 4px; opacity: 0; transition: opacity 0.15s;
+}
+.side-item:hover .side-grip { opacity: 0.7; }
+.side-grip:active { cursor: grabbing; }
+.side-item.drag-over { box-shadow: inset 0 2px 0 var(--accent); }
+
+.side-dot {
+  flex: 0 0 auto; border: none; background: none; cursor: pointer;
+  padding: 4px 2px; display: flex; align-items: center;
+}
+.side-dot i { width: 9px; height: 9px; border-radius: 50%; display: block; }
+.side-item .side-name { padding-left: 6px; }
+
+.color-pop {
+  position: absolute; left: 26px; top: 100%; z-index: 30;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px;
+  padding: 7px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+}
+.color-pop .swatch {
+  width: 16px; height: 16px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent;
+}
+.color-pop .swatch.on { border-color: var(--fg); }

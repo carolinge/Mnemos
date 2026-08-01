@@ -93,4 +93,14 @@ function migrate(db) {
     `)
     db.pragma('user_version = 2')
   }
+
+  // v3：任务可手动排序（边栏拖动），position 小的排前面
+  if (db.pragma('user_version', { simple: true }) < 3) {
+    db.exec(`ALTER TABLE projects ADD COLUMN position INTEGER NOT NULL DEFAULT 0;`)
+    // 现有任务按名字定一个初始顺序，避免全是 0 时次序随机
+    const rows = db.prepare('SELECT id FROM projects ORDER BY name').all()
+    const upd = db.prepare('UPDATE projects SET position = ? WHERE id = ?')
+    rows.forEach((r, i) => upd.run(i, r.id))
+    db.pragma('user_version = 3')
+  }
 }

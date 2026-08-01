@@ -147,7 +147,16 @@ export function entriesRoutes(app, db) {
   })
 
   app.get('/api/projects', c => {
-    return c.json(db.prepare('SELECT * FROM projects ORDER BY name').all())
+    return c.json(db.prepare('SELECT * FROM projects ORDER BY position, name').all())
+  })
+
+  // 边栏拖动排序：整份新顺序一次提交
+  app.put('/api/projects/order', async c => {
+    const body = await c.req.json().catch(() => ({}))
+    const ids = Array.isArray(body.ids) ? body.ids : []
+    const upd = db.prepare('UPDATE projects SET position = ? WHERE id = ?')
+    db.transaction(() => ids.forEach((id, i) => upd.run(i, id)))()
+    return c.json(db.prepare('SELECT * FROM projects ORDER BY position, name').all())
   })
 
   app.patch('/api/projects/:id', async c => {
@@ -158,7 +167,9 @@ export function entriesRoutes(app, db) {
     const name = body.name !== undefined ? String(body.name).trim() : row.name
     const color = body.color !== undefined ? body.color : row.color
     const archived = body.archived !== undefined ? (body.archived ? 1 : 0) : row.archived
-    db.prepare('UPDATE projects SET name = ?, color = ?, archived = ? WHERE id = ?').run(name, color, archived, id)
+    const position = body.position !== undefined ? Number(body.position) : row.position
+    db.prepare('UPDATE projects SET name = ?, color = ?, archived = ?, position = ? WHERE id = ?')
+      .run(name, color, archived, position, id)
     return c.json(db.prepare('SELECT * FROM projects WHERE id = ?').get(id))
   })
 }
