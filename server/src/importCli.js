@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // 命令行导入旧 Typora 日记，直接写库，不需要启动服务器。
 //
-//   node src/importCli.js --dry ~/Desktop/Dianote*.md      先预览，不写任何东西
-//   node src/importCli.js ~/Desktop/Dianote*.md            确认无误后真正导入
+//   node src/importCli.js --dry 旧笔记.md      先预览，不写任何东西
+//   node src/importCli.js 旧笔记.md            确认无误后真正导入
 //
 // 只往库里添加，从不删除或覆盖已有笔记。
 

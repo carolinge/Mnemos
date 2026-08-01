@@ -11,6 +11,8 @@
   --card-pad-x: 18px;
   /* 卡片相对日期标头再往里缩的量（左右各一次，卡片因此更短） */
   --card-indent: 22px;
+  /* 图片默认高度：插入后自动等高排列，觉得大就调小这一个值 */
+  --img-default-h: 96px;
 }
 [data-theme="dark"] {
   --bg: #191917; --fg: #e6e4de; --muted: #85817a; --card: #22221f;
@@ -165,12 +167,18 @@ body {
   display: block; margin: 12px auto; background: var(--card); color: var(--accent);
   border: 1px solid var(--border); border-radius: 20px; padding: 6px 18px; cursor: pointer;
 }
+/* 回到今天：右下角圆形悬浮按钮，只放一个下箭头 */
 .back-today {
-  position: fixed; right: 46px; bottom: 28px; z-index: 20;
-  background: var(--card); color: var(--fg); border: 1px solid var(--border);
-  border-radius: 20px; padding: 8px 16px; cursor: pointer; box-shadow: var(--shadow);
-  font-size: 13px;
+  position: fixed; right: 28px; bottom: 28px; z-index: 20;
+  width: 42px; height: 42px; padding: 0;
+  display: grid; place-items: center;
+  background: var(--card); color: var(--muted);
+  border: 1px solid var(--border); border-radius: 50%;
+  cursor: pointer; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  transition: color 0.15s, border-color 0.15s, transform 0.15s;
 }
+.back-today:hover { color: var(--accent); border-color: var(--accent); transform: translateY(1px); }
+.back-today svg { width: 18px; height: 18px; }
 
 /* ---------- 边栏与标签 ---------- */
 .sidebar {
@@ -522,13 +530,19 @@ html { scrollbar-color: var(--border) transparent; }
 
 /* ---------- 行内图片：一行能并排多张，放不下自动换行 ---------- */
 .img-wrap {
-  display: inline-block; vertical-align: top;
-  position: relative; max-width: 100%; line-height: 0;
-  margin: 2px 6px 2px 0;
+  display: inline-block;
+  /* 基线对齐到文字中部：光标就落在图片两侧而不是穿过图片 */
+  vertical-align: middle;
+  position: relative; max-width: 100%;
+  margin: 3px 6px 3px 0;
 }
-.img-wrap img { display: block; width: 100%; height: auto; border-radius: 8px; cursor: zoom-in; }
-/* 没设过宽度的图默认占约三分之一行，方便三张并排；拖角可随时改 */
-.img-wrap:not([style*="width"]) { width: min(32%, 320px); }
+.img-wrap img {
+  display: block; border-radius: 8px; cursor: zoom-in;
+  max-width: 100%;
+}
+/* 默认统一高度，插进来自动排得整整齐齐；拖右下角圆点可改成按宽度百分比 */
+.img-wrap:not([style*="width"]) img { height: var(--img-default-h); width: auto; }
+.img-wrap[style*="width"] img { width: 100%; height: auto; }
 
 /* ---------- 代码块：右上角语言选择器（仿 Typora） ---------- */
 .code-block { position: relative; margin: 0.6em 0; }
