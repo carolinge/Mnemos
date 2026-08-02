@@ -1,6 +1,5 @@
-# app 名由 `fly launch` 生成/确认
-app = "parchment"
-primary_region = "nrt"
+app = "carolinge-mnemos"
+primary_region = "sin"
 
 [env]
   PORT = "8787"

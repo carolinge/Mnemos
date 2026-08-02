@@ -55,6 +55,10 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
     setComposers(c => ({ ...c, [day]: [...(c[day] ?? []), crypto.randomUUID()] }))
   }
 
+  function dropComposer(day: string, key: string) {
+    setComposers(c => ({ ...c, [day]: (c[day] ?? []).filter(k => k !== key) }))
+  }
+
   // 新的一天：选个日期，那天就出现一张空卡片等你写（保存后自动排到正确位置）
   function addDay() {
     const input = window.prompt('Date for the new entry (YYYY-MM-DD)', todayStr())
@@ -122,8 +126,8 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
                   ))}
                   {(composers[d.day] ?? []).map(key => (
                     <EntryCard key={key} entry={null} day={d.day} draftKey={`new:${key}`} tasks={tasks}
-                      onTaskClick={onTaskClick}
-                      onCreated={() => { t.reload(); onTasksChanged?.() }} />
+                      onTaskClick={onTaskClick} onDiscard={() => dropComposer(d.day, key)}
+                      onCreated={() => { dropComposer(d.day, key); t.reload(); onTasksChanged?.() }} />
                   ))}
                   <div className="add-row">
                     <button className="new-entry" title={`Add a card under ${d.day}`}
@@ -145,8 +149,8 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
           <div className="day-cards">
             {(composers[today] ?? []).map(key => (
               <EntryCard key={key} entry={null} day={today} draftKey={`new:${key}`} tasks={tasks}
-                onTaskClick={onTaskClick}
-                onCreated={() => { t.reload(); onTasksChanged?.() }} />
+                onTaskClick={onTaskClick} onDiscard={() => dropComposer(today, key)}
+                onCreated={() => { dropComposer(today, key); t.reload(); onTasksChanged?.() }} />
             ))}
             <div className="add-row">
               <button className="new-entry" title="Add a card under today"

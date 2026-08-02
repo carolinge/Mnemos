@@ -4,18 +4,20 @@ import { buildExtensions } from '../editor/extensions'
 import { useAutosave, type EntryData } from '../hooks/useAutosave'
 import { api } from '../api'
 import { TaskPicker } from './TaskPicker'
+import { Confirm } from './Confirm'
 import type { Project } from './Sidebar'
 
 const EMPTY_DOC = { type: 'doc', content: [] }
 const COLLAPSED_MAX_PX = 140   // 折叠态约四行，超出显示「展开」
 
-export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, onTaskClick }: {
+export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, onDiscard, onTaskClick }: {
   entry: EntryData | null      // null = 尚未落库的新条目
   day: string
   draftKey: string
   tasks: Project[]
   onCreated?: (e: EntryData) => void
   onDeleted?: (id: string) => void
+  onDiscard?: () => void       // 丢弃一张还没保存的新卡片
   onTaskClick?: (taskId: string) => void
 }) {
   // 断网草稿优先于服务器内容
@@ -37,6 +39,7 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
   const bodyRef = useRef<HTMLDivElement>(null)
 
   // 源码模式：显示这张卡片的 Markdown 原文，可直接改、可整段粘贴外部 Markdown
+  const [confirming, setConfirming] = useState(false)
   const [source, setSource] = useState<string | null>(null)   // null = 渲染模式
   const [busy, setBusy] = useState(false)
 
@@ -141,8 +144,8 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
 
   async function remove() {
     const id = autosave.entryIdRef.current
-    if (!id) return
-    if (!window.confirm('Delete this card?')) return
+    setConfirming(false)
+    if (!id) { localStorage.removeItem(`draft:${draftKey}`); onDiscard?.(); return }
     await api(`/api/entries/${id}`, { method: 'DELETE' })
     onDeleted?.(id)
   }
@@ -162,7 +165,8 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
           )}
         </span>
         <span className="entry-actions">
-          {id && <button className="icon-btn" title="Delete this card" onClick={remove}>×</button>}
+          <button className="icon-btn" title={id ? 'Delete this card' : 'Discard this card'}
+            onClick={() => setConfirming(true)}>×</button>
         </span>
       </div>
       {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 120 }}>
@@ -221,19 +225,29 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
       )}
 
       <div className="entry-foot">
-        <button className="source-toggle" disabled={busy}
+        <button className="source-toggle foot-left" disabled={busy}
           title={source === null
             ? 'Switch to source: see the raw Markdown, or paste some in'
             : 'Back to rendered view (⌘↩)'}
           onClick={() => (source === null ? toSource() : toRendered())}>
           {busy ? '…' : source === null ? '</> Source' : '✓ Rendered'}
         </button>
-        {source === null && overflowing && (
+        {source === null && overflowing ? (
           <button className="entry-toggle" onClick={() => setExpanded(v => !v)}>
             {expanded ? 'Collapse ↑' : 'Expand ↓'}
           </button>
-        )}
+        ) : <span className="entry-toggle" />}
+        <span className="foot-right" />
       </div>
+
+      {confirming && (
+        <Confirm
+          message={id ? 'Delete this card?' : 'Discard this card?'}
+          detail={id ? 'This cannot be undone.' : 'It has not been saved yet.'}
+          confirmLabel={id ? 'Delete' : 'Discard'}
+          onConfirm={remove}
+          onCancel={() => setConfirming(false)} />
+      )}
     </article>
   )
 }
