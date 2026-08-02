@@ -67,3 +67,40 @@ describe('useTimeline', () => {
     expect(result.current.days[0].entries.map(e => e.id)).toEqual(['a'])
   })
 })
+
+describe('reload 不清空已加载内容（修复保存新卡片时整屏闪烁/跳动）', () => {
+  it('reload 期间旧数据一直在，且上翻加载出来的历史不丢', async () => {
+    mockApi.mockResolvedValueOnce(resp([['2026-07-28', ['b']]]))
+    const { result } = renderHook(() => useTimeline(null, null))
+    await waitFor(() => expect(result.current.days.length).toBe(1))
+
+    // 上翻加载出更早的一天
+    mockApi.mockResolvedValueOnce(resp([['2026-07-27', ['a']]]))
+    await act(() => result.current.loadOlder())
+    expect(result.current.days.map(d => d.day)).toEqual(['2026-07-27', '2026-07-28'])
+
+    // reload：中途不得出现空列表，历史也要保住
+    let sawEmpty = false
+    mockApi.mockImplementationOnce(async () => {
+      if (result.current.days.length === 0) sawEmpty = true
+      return resp([['2026-07-28', ['b', 'c']]])
+    })
+    await act(async () => { result.current.reload() })
+    await waitFor(() => expect(result.current.days.flatMap(d => d.entries).length).toBe(3))
+    expect(sawEmpty).toBe(false)
+    expect(result.current.days.map(d => d.day)).toEqual(['2026-07-27', '2026-07-28'])
+  })
+
+  it('切换项目时才清空（换的是要看的内容）', async () => {
+    mockApi.mockResolvedValueOnce(resp([['2026-07-28', ['b']]]))
+    const { result, rerender } = renderHook(
+      ({ p }: { p: string | null }) => useTimeline(p, null),
+      { initialProps: { p: null as string | null } },
+    )
+    await waitFor(() => expect(result.current.days.length).toBe(1))
+
+    mockApi.mockResolvedValueOnce(resp([['2026-07-20', ['z']]]))
+    rerender({ p: 'proj-1' })
+    await waitFor(() => expect(result.current.days.map(d => d.day)).toEqual(['2026-07-20']))
+  })
+})

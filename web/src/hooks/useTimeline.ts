@@ -18,20 +18,29 @@ export function useTimeline(project: string | null, anchor: string | null) {
   const [ready, setReady] = useState(false)
   const [reloadKey, setReloadKey] = useState(0)
   const loading = useRef(false)
+  // 上一次渲染的视图；只有视图真的换了才清空列表
+  const viewRef = useRef<string | null>(null)
 
   const reload = useCallback(() => setReloadKey(k => k + 1), [])
 
   useEffect(() => {
     let alive = true
-    setDays([]); setReady(false); setHasOlder(true)
+    // 换项目 / 换锚点 = 换了要看的内容，清空重来是对的；
+    // 单纯 reload（比如刚存下一张新卡片）必须保住现有内容，
+    // 否则整条时间流会闪成骨架屏、已加载的历史被丢弃、滚动位置塌陷。
+    const view = `${project ?? ''}|${anchor ?? ''}`
+    const viewChanged = viewRef.current !== view
+    viewRef.current = view
+    if (viewChanged) { setDays([]); setReady(false); setHasOlder(true) }
     setHasNewer(Boolean(anchor && anchor < todayStr()))
     const params = anchor
       ? { before: nextDay(anchor), limit: '10', project: project ?? undefined }
       : { limit: '10', project: project ?? undefined }
     api<ListResp>(`/api/entries?${qs(params)}`).then(r => {
       if (!alive) return
-      setDays(mergeDays([], r.days))
-      if (!r.days.length) setHasOlder(false)
+      // 视图没变就并进现有数据，保住上翻加载出来的历史
+      setDays(cur => mergeDays(viewChanged ? [] : cur, r.days))
+      if (viewChanged && !r.days.length) setHasOlder(false)
       setReady(true)
     }).catch(() => { if (alive) setReady(true) })
     return () => { alive = false }

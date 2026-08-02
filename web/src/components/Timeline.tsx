@@ -20,6 +20,9 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
   const topSentinel = useRef<HTMLDivElement>(null)
   // 每天各自的「正在撰写」卡片：day → 若干临时 key
   const [composers, setComposers] = useState<Record<string, string[]>>({})
+  // 已经存进库、但仍以「撰写中卡片」形式留在屏幕上的条目 id。
+  // 服务端返回的同一条要跳过，否则会重复显示一张。
+  const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set())
   const [awayFromBottom, setAway] = useState(false)
   const [foldedYears, setFoldedYears] = useState<Set<string>>(new Set())
   const didInitScroll = useRef(false)
@@ -32,6 +35,7 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
     else el.scrollTop = el.scrollHeight
   }, [t.ready, anchor])
   useLayoutEffect(() => { didInitScroll.current = false }, [project, anchor])
+  useLayoutEffect(() => { setComposers({}); setOwnedIds(new Set()) }, [project, anchor])
 
   useLayoutEffect(() => {
     const el = boxRef.current, s = topSentinel.current
@@ -57,6 +61,12 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
 
   function dropComposer(day: string, key: string) {
     setComposers(c => ({ ...c, [day]: (c[day] ?? []).filter(k => k !== key) }))
+  }
+
+  // 新卡片刚落库：留在屏幕上继续编辑（不卸载、不重新拉取），
+  // 只记下 id 让服务端返回的同一条不要再画一遍。
+  function claim(id: string) {
+    setOwnedIds(s => new Set(s).add(id))
   }
 
   // 新的一天：选个日期，那天就出现一张空卡片等你写（保存后自动排到正确位置）
@@ -120,14 +130,16 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
                   onChangeDay={moveDay}
                   onNoteSaved={(day, text) => t.applyNote(day, text)} />
                 <div className="day-cards">
-                  {d.entries.map(e => (
+                  {d.entries.filter(e => !ownedIds.has(e.id)).map(e => (
                     <EntryCard key={e.id} entry={e} day={d.day} draftKey={e.id} tasks={tasks}
                       onDeleted={t.removeEntry} onTaskClick={onTaskClick} />
                   ))}
                   {(composers[d.day] ?? []).map(key => (
                     <EntryCard key={key} entry={null} day={d.day} draftKey={`new:${key}`} tasks={tasks}
-                      onTaskClick={onTaskClick} onDiscard={() => dropComposer(d.day, key)}
-                      onCreated={() => { dropComposer(d.day, key); t.reload(); onTasksChanged?.() }} />
+                      onTaskClick={onTaskClick}
+                      onDiscard={() => dropComposer(d.day, key)}
+                      onDeleted={id => { dropComposer(d.day, key); t.removeEntry(id) }}
+                      onCreated={e => { claim(e.id); onTasksChanged?.() }} />
                   ))}
                   <div className="add-row">
                     <button className="new-entry" title={`Add a card under ${d.day}`}
@@ -149,8 +161,10 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
           <div className="day-cards">
             {(composers[today] ?? []).map(key => (
               <EntryCard key={key} entry={null} day={today} draftKey={`new:${key}`} tasks={tasks}
-                onTaskClick={onTaskClick} onDiscard={() => dropComposer(today, key)}
-                onCreated={() => { dropComposer(today, key); t.reload(); onTasksChanged?.() }} />
+                onTaskClick={onTaskClick}
+                onDiscard={() => dropComposer(today, key)}
+                onDeleted={id => { dropComposer(today, key); t.removeEntry(id) }}
+                onCreated={e => { claim(e.id); onTasksChanged?.() }} />
             ))}
             <div className="add-row">
               <button className="new-entry" title="Add a card under today"
