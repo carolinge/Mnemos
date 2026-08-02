@@ -79,17 +79,32 @@ cd web && npx vitest run      # 70
 
 One container; SQLite and the images both live on the mounted volume at `/data`.
 
+First time only:
+
 ```bash
-fly launch --no-deploy                      # confirm app name and region, keep the fly.toml here
-fly volumes create parchment_data --size 3  # 3 GB to start, grow it later
-fly secrets set ACCESS_PASSWORD='your-password'
-fly deploy
+fly apps create <your-app> --org personal
+fly volumes create parchment_data --app <your-app> --region sin --size 3
+fly secrets set ACCESS_PASSWORD='your-password' --app <your-app>
 ```
 
-Then open `https://<your-app>.fly.dev` and enter the password.
+Point `app` and `primary_region` in `fly.toml` at what you just created, then every
+deploy after that is one line:
+
+```bash
+fly deploy --remote-only
+```
+
+`--remote-only` builds the image on fly.io, so Docker is not needed locally. Open
+`https://<your-app>.fly.dev` and enter the password.
 
 `auto_stop_machines` is on, so the machine sleeps when nobody is using it and wakes on the
 next request (a second or two of cold start).
+
+### The routine
+
+Edit locally → `npx vitest run` in both `server/` and `web/` → commit and push to GitHub →
+`fly deploy --remote-only`. The volume is never touched by a deploy, so notes and images
+survive every release.
 
 ### Trying it in Docker
 
