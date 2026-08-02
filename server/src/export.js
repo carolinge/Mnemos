@@ -19,8 +19,12 @@ export function formatDayHeading(day) {
   return `##### <span id="${id}">${MONTH_EN[m - 1]} ${String(d).padStart(2, '0')}<sup>${ordinal(d)}</sup></span>`
 }
 
+// 无任务的卡片也要有边界标记，否则导入时会被并进上一张卡片。
+// 用 HTML 注释：Typora 等编辑器里不显示，解析器认得。
+export const UNTASKED_MARKER = '<!-- card -->'
+
 export function formatTaskHeading(task) {
-  if (!task) return ''
+  if (!task) return UNTASKED_MARKER
   return `<font color=${task.color || TASK_COLOR_FALLBACK}>${task.name}</font>`
 }
 
@@ -52,8 +56,7 @@ export function buildFullMarkdown(db, opts = {}) {
     const note = (notes.get(day) ?? '').trim()
     if (note) out += `${note}\n\n`
     for (const r of byDay.get(day)) {
-      const heading = formatTaskHeading(taskOf(db, r.task_id))
-      if (heading) out += `${heading}\n\n`
+      out += `${formatTaskHeading(taskOf(db, r.task_id))}\n\n`
       out += pmToMarkdown(JSON.parse(r.content), { imgPrefix, onEmbed })
       out += '\n'
     }

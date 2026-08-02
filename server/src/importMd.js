@@ -18,6 +18,8 @@ const YEAR_RE = /^#\s+(\d{4})\s*$/
 const DAY_RE = /^#{2,6}\s+(.+?)\s*$/
 const SPAN_ID_RE = /<span\s+id="(\d{6})"/
 const TASK_RE = /^<font\s+color=(#[0-9a-fA-F]{6})>\s*(.*?)\s*<\/font>(.*)$/
+// 无任务卡片的边界标记（导出端写的是同一个常量）
+const UNTASKED_RE = /^<!--\s*card\s*-->(.*)$/
 
 // "Mar 12<sup>th</sup>" / "July 2nd" / "May 16th" → {month, day}
 function parseMonthDay(text) {
@@ -112,6 +114,14 @@ export function parseNotesMarkdown(text, opts = {}) {
         continue
       }
       // 不是日期的标题（如正文里的小标题）→ 落进当前卡片正文
+    }
+
+    // 无任务卡片：只起一张新卡片，不建任务
+    const untasked = line.match(UNTASKED_RE)
+    if (untasked && day) {
+      flushCard()
+      card = { day, task: null, color: null, position: position++, lines: untasked[1].trim() ? [untasked[1].trim()] : [] }
+      continue
     }
 
     const taskMatch = line.match(TASK_RE)

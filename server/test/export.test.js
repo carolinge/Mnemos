@@ -3,6 +3,7 @@ import { pmToMarkdown, buildFullMarkdown, buildMonthlyMarkdown } from '../src/ex
 import { mdToPm } from '../src/mdToPm.js'
 import { parseNotesMarkdown } from '../src/importMd.js'
 import { createDb } from '../src/db.js'
+import { resolveTask } from '../src/entries.js'
 import { createApp } from '../src/app.js'
 
 const P = (...inline) => ({ type: 'paragraph', content: inline })
@@ -189,5 +190,48 @@ describe('引用块序列化', () => {
     // 转回去仍是一个 blockquote
     const back = mdToPm(md)
     expect(back.content.filter(n => n.type === 'blockquote').length).toBe(1)
+  })
+})
+
+describe('导出 → 导入 往返：卡片边界', () => {
+  it('没有任务的卡片不会被并进上一张卡片', () => {
+    const db = createDb(':memory:')
+    const mk = (day, pos, taskName, text) => {
+      const task = taskName ? resolveTask(db, taskName) : null
+      const content = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] }
+      db.prepare(`INSERT INTO entries(id, day, position, content, text, task_id) VALUES (?,?,?,?,?,?)`)
+        .run(`e${day}${pos}`, day, pos, JSON.stringify(content), text, task?.id ?? null)
+    }
+    mk('2026-07-01', 0, 'PH', '有任务的第一张')
+    mk('2026-07-01', 1, null, '没有任务的第二张')
+    mk('2026-07-01', 2, 'SAM', '有任务的第三张')
+
+    const md = buildFullMarkdown(db)
+    const back = parseNotesMarkdown(md)
+    expect(back.entries.length).toBe(3)
+    expect(back.entries.map(e => e.task)).toEqual(['PH', null, 'SAM'])
+    expect(back.entries[1].markdown).toContain('没有任务的第二张')
+    // 第一张不该把第二张的正文吃进去
+    expect(back.entries[0].markdown).not.toContain('没有任务的第二张')
+  })
+
+  it('整库往返：条目数与任务归属一一对应', () => {
+    const db = createDb(':memory:')
+    const rows = [
+      ['2026-05-18', 0, 'PH', '第一天第一条'],
+      ['2026-05-18', 1, 'SAM', '第一天第二条'],
+      ['2026-06-02', 0, null, '第二天无任务'],
+      ['2026-06-02', 1, 'PH', '第二天有任务'],
+    ]
+    for (const [day, pos, taskName, text] of rows) {
+      const task = taskName ? resolveTask(db, taskName) : null
+      const content = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] }
+      db.prepare(`INSERT INTO entries(id, day, position, content, text, task_id) VALUES (?,?,?,?,?,?)`)
+        .run(`x${day}${pos}`, day, pos, JSON.stringify(content), text, task?.id ?? null)
+    }
+    const back = parseNotesMarkdown(buildFullMarkdown(db))
+    expect(back.entries.length).toBe(rows.length)
+    expect(back.entries.map(e => e.day)).toEqual(rows.map(r => r[0]))
+    expect(back.entries.map(e => e.task)).toEqual(rows.map(r => r[2]))
   })
 })
