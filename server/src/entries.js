@@ -32,6 +32,28 @@ export function taskOf(db, taskId) {
   return db.prepare('SELECT id, name, color, archived FROM projects WHERE id = ?').get(taskId) ?? null
 }
 
+// 连续打字的合并窗口：这段时间内的编辑存档只留最新一条检查点。
+// 「被覆盖前的那一版」不受影响——每次覆盖都是先存档再写库，
+// 被裁掉的只会是更早的中间态。
+const COALESCE_MS = 3 * 60 * 1000
+
+// 覆盖或删除之前，把当前这一版原样留档。
+export function snapshot(db, row, reason) {
+  const prev = db.prepare(
+    `SELECT id, reason, saved_at FROM entry_revisions
+     WHERE entry_id = ? ORDER BY saved_at DESC LIMIT 1`).get(row.id)
+
+  db.prepare(`INSERT INTO entry_revisions(id, entry_id, version, day, task_id, content, text, reason)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(crypto.randomUUID(), row.id, row.version, row.day, row.task_id, row.content, row.text, reason)
+
+  // 只合并「连续打字」：删除和取回的存档一律留着
+  if (prev && prev.reason === 'edit' && reason === 'edit'
+      && Date.now() - new Date(prev.saved_at).getTime() < COALESCE_MS) {
+    db.prepare('DELETE FROM entry_revisions WHERE id = ?').run(prev.id)
+  }
+}
+
 function rowToEntry(db, row) {
   return {
     id: row.id, day: row.day, position: row.position,
@@ -134,6 +156,7 @@ export function entriesRoutes(app, db) {
     const taskId = body.task === undefined
       ? row.task_id
       : (body.task === null ? null : resolveTask(db, body.task)?.id ?? null)
+    snapshot(db, row, 'edit')
     db.prepare(`UPDATE entries SET content = ?, text = ?, day = ?, position = ?, task_id = ?,
                 version = version + 1, updated_at = ? WHERE id = ?`)
       .run(JSON.stringify(content), extractText(content), day, position, taskId, now(), id)
@@ -142,8 +165,40 @@ export function entriesRoutes(app, db) {
 
   app.delete('/api/entries/:id', c => {
     const id = c.req.param('id')
+    const row = db.prepare('SELECT * FROM entries WHERE id = ? AND deleted_at IS NULL').get(id)
+    if (row) snapshot(db, row, 'delete')
     db.prepare('UPDATE entries SET deleted_at = ? WHERE id = ?').run(now(), id)
     return c.json({ ok: true })
+  })
+
+  // 历史版本：只读列表 + 取回某一版
+  app.get('/api/entries/:id/revisions', c => {
+    const rows = db.prepare(`SELECT id, version, day, task_id, text, reason, saved_at
+                             FROM entry_revisions WHERE entry_id = ?
+                             ORDER BY version DESC, saved_at DESC`).all(c.req.param('id'))
+    return c.json(rows.map(r => ({ ...r, task: taskOf(db, r.task_id) })))
+  })
+
+  app.get('/api/revisions/:revId', c => {
+    const r = db.prepare('SELECT * FROM entry_revisions WHERE id = ?').get(c.req.param('revId'))
+    if (!r) return c.json({ error: 'not found' }, 404)
+    return c.json({ ...r, content: JSON.parse(r.content), task: taskOf(db, r.task_id) })
+  })
+
+  // 取回旧版本：当前这版同样先存档，所以「取回」本身也能被撤销
+  app.post('/api/entries/:id/restore', async c => {
+    const id = c.req.param('id')
+    const body = await c.req.json().catch(() => ({}))
+    const rev = db.prepare('SELECT * FROM entry_revisions WHERE id = ? AND entry_id = ?')
+      .get(body.revisionId, id)
+    if (!rev) return c.json({ error: 'revision not found' }, 404)
+    const row = db.prepare('SELECT * FROM entries WHERE id = ?').get(id)
+    if (!row) return c.json({ error: 'not found' }, 404)
+    snapshot(db, row, 'restore')
+    db.prepare(`UPDATE entries SET content = ?, text = ?, task_id = ?,
+                version = version + 1, updated_at = ?, deleted_at = NULL WHERE id = ?`)
+      .run(rev.content, rev.text, rev.task_id, now(), id)
+    return c.json(rowToEntry(db, db.prepare('SELECT * FROM entries WHERE id = ?').get(id)))
   })
 
   app.get('/api/projects', c => {

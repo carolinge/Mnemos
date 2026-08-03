@@ -103,4 +103,26 @@ function migrate(db) {
     rows.forEach((r, i) => upd.run(i, r.id))
     db.pragma('user_version = 3')
   }
+
+  // v4：每条笔记的历史版本。只增不改不删——任何一次覆盖或删除，
+  // 都先把被替换掉的那一版原样存进来，所以内容永远可以取回。
+  if (db.pragma('user_version', { simple: true }) < 4) {
+    db.exec(`
+      CREATE TABLE entry_revisions(
+        id TEXT PRIMARY KEY,
+        entry_id TEXT NOT NULL,
+        version INTEGER NOT NULL,
+        day TEXT NOT NULL,
+        task_id TEXT,
+        content TEXT NOT NULL,
+        text TEXT NOT NULL DEFAULT '',
+        reason TEXT NOT NULL DEFAULT 'edit',
+        saved_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+      );
+      CREATE INDEX idx_revisions_entry ON entry_revisions(entry_id, version DESC);
+    `)
+    db.pragma('user_version = 4')
+  }
+
+
 }
