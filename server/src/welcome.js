@@ -77,17 +77,70 @@ export const WELCOME_CARDS = [
 ]
 
 // 库里完全没有笔记时才写入，避免覆盖用户内容
+// 几天示例笔记，让「同一天并行推进好几个课题」在首次打开时就看得见。
+// [往前推几天, 任务名, 卡片内容]
+export const SAMPLE_CARDS = [
+  [2, 'Perovskite', doc(
+    p('Spin-coating series done. Anti-solvent dripped at 8 s gives the flattest film so far.'),
+    bullets('120 °C anneal, 10 min', 'PL peak 780 nm', 'Rerun with 6 s and 10 s to bracket it'),
+  )],
+  [2, 'Graphene', doc(
+    p('Transfer keeps tearing at the corners. Suspect the PMMA is too thin.'),
+  )],
+  [1, 'Perovskite', doc(
+    p('6 s is worse, 10 s is the same as 8 s. Keeping 8 s.'),
+    { type: 'blockquote', content: [p('Humidity has to stay under 30% or none of this reproduces.')] },
+  )],
+  [1, 'Simulation', doc(
+    p('Coarse-grained run finished overnight.'),
+    { type: 'codeBlock', attrs: { language: 'python' },
+      content: [{ type: 'text', text: 'rg = md.compute_rg(traj)\nprint(rg.mean(), rg.std())' }] },
+  )],
+  [1, 'Group meeting', doc(
+    p('Talk: condensate ageing. Stickers cross-link, diffusion slows — worth reading up on.'),
+  )],
+  [0, 'Simulation', doc(
+    p('Comparing against experiment today. Numbers are in the same ballpark, writing it up.'),
+  )],
+  [0, 'Graphene', doc(
+    p('Thicker PMMA fixed the tearing. Two clean transfers in a row.'),
+  )],
+]
+
+const SAMPLE_NOTES = [
+  [1, 'Three things running at once today — the trick is keeping them apart.'],
+]
+
+const shiftDay = (day, back) => {
+  const d = new Date(day + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() - back)
+  return d.toISOString().slice(0, 10)
+}
+
 export function seedWelcomeIfEmpty(db, deps) {
   const { resolveTask, extractText, randomUUID, today } = deps
   const count = db.prepare('SELECT COUNT(*) AS n FROM entries').get().n
   if (count > 0) return false
 
-  const task = resolveTask(db, WELCOME_TASK)
   const day = today()
   const insert = db.prepare(
     `INSERT INTO entries(id, day, position, content, text, task_id) VALUES (?, ?, ?, ?, ?, ?)`)
+
+  const help = resolveTask(db, WELCOME_TASK)
   WELCOME_CARDS.forEach((content, i) => {
-    insert.run(randomUUID(), day, i, JSON.stringify(content), extractText(content), task.id)
+    insert.run(randomUUID(), day, i, JSON.stringify(content), extractText(content), help.id)
   })
+
+  // 今天已经放了说明卡，示例卡要从它们后面接着排，否则位置号相撞、顺序不定
+  const posByDay = { [day]: WELCOME_CARDS.length - 1 }
+  for (const [back, taskName, content] of SAMPLE_CARDS) {
+    const d = shiftDay(day, back)
+    posByDay[d] = (posByDay[d] ?? -1) + 1
+    insert.run(randomUUID(), d, posByDay[d], JSON.stringify(content),
+               extractText(content), resolveTask(db, taskName).id)
+  }
+  const note = db.prepare('INSERT INTO day_notes(day, text) VALUES (?, ?)')
+  for (const [back, text] of SAMPLE_NOTES) note.run(shiftDay(day, back), text)
+
   return true
 }

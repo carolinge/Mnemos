@@ -4,13 +4,22 @@
 > `parchment`. Renaming them would orphan existing `parchment.db` files, so they
 > were left alone. Nothing about the app depends on the name.
 
-A deliberately small web notebook for researchers. It opens on today with the cursor
-ready; what you write flows by date and threads by task.
+A notebook for researchers running several projects at once.
 
-Why not just a Markdown editor: research notes are not only prose. Screenshots need to go
-in without ceremony, figures need to be resized by hand, a paper is often just a link you
-want to drop in, and the charts an AI hands you should stay alive. Mnemos treats all of
-that as first-class content rather than attachments.
+Most note apps make you choose a filing cabinet: one note per project, or one note per
+day. Real lab work is both at the same time. On a Tuesday you touch the perovskite films,
+a simulation that ran overnight, and something someone said in group meeting — three
+threads, one afternoon, none of them finished.
+
+So Mnemos files every card twice. **Down the page** it is a diary: today's cards sit
+together, whatever they belong to, and you write into it the way you'd write into a
+lab notebook. **Across the page** it is a project log: click a task in the sidebar and
+that project's cards line up across every date it ever appeared, with the other projects
+out of the way.
+
+You never file anything. You pick a task on the card and both views follow.
+
+![Three projects on one afternoon; click a task in the sidebar to read just that thread](docs/img/multitask.png)
 
 ## What it does
 
@@ -54,6 +63,14 @@ that as first-class content rather than attachments.
   print-ready page you can save as PDF. Everything lives in one directory — copy it and
   you have a backup.
 
+## What it looks like on first run
+
+An empty database seeds itself with a few help cards and a couple of days of sample
+notes across several tasks, so the multi-project layout is visible before you have
+written anything. Delete them whenever you like — they are ordinary cards.
+
+![The default state after a fresh install](docs/img/timeline.png)
+
 ## Local development
 
 Node 22+. Two terminals:
@@ -71,8 +88,8 @@ Open the URL Vite prints and log in with `dev`.
 Tests:
 
 ```bash
-cd server && npx vitest run   # 83
-cd web && npx vitest run      # 70
+cd server && npx vitest run   # 94
+cd web && npx vitest run      # 72
 ```
 
 ## Deploying to fly.io
