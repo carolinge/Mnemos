@@ -77,32 +77,50 @@ export const WELCOME_CARDS = [
 ]
 
 // 库里完全没有笔记时才写入，避免覆盖用户内容
-// 几天示例笔记，让「同一天并行推进好几个课题」在首次打开时就看得见。
+// 几天示例笔记：任务名故意用 Project 1 / Project 2，换成自己的课题名即可。
+// 内容刻意把每个功能都演示一遍——标题、列表、待办、引用、表格、代码块、
+// 公式、流程图，方便第一次打开就知道能写什么。
 // [往前推几天, 任务名, 卡片内容]
 export const SAMPLE_CARDS = [
-  [2, 'Perovskite', doc(
-    p('Spin-coating series done. Anti-solvent dripped at 8 s gives the flattest film so far.'),
-    bullets('120 °C anneal, 10 min', 'PL peak 780 nm', 'Rerun with 6 s and 10 s to bracket it'),
+  [2, 'Project 1', doc(
+    h2('Spin-coating series'),
+    p('Anti-solvent dripped at 8 s gives the flattest film so far.'),
+    { type: 'taskList', content: [
+      { type: 'taskItem', attrs: { checked: true }, content: [p('120 °C anneal, 10 min')] },
+      { type: 'taskItem', attrs: { checked: false }, content: [p('Bracket it with 6 s and 10 s')] },
+    ] },
+    { type: 'table', content: [
+      { type: 'tableRow', content: ['Drip at', 'Roughness', 'PL peak'].map(t => (
+        { type: 'tableHeader', content: [p(t)] })) },
+      { type: 'tableRow', content: ['6 s', '18 nm', '774 nm'].map(t => (
+        { type: 'tableCell', content: [p(t)] })) },
+      { type: 'tableRow', content: ['8 s', '6 nm', '780 nm'].map(t => (
+        { type: 'tableCell', content: [p(t)] })) },
+    ] },
   )],
-  [2, 'Graphene', doc(
+  [2, 'Project 2', doc(
     p('Transfer keeps tearing at the corners. Suspect the PMMA is too thin.'),
+    { type: 'blockquote', content: [
+      p('Humidity has to stay under 30% or none of this reproduces.'),
+    ] },
   )],
-  [1, 'Perovskite', doc(
-    p('6 s is worse, 10 s is the same as 8 s. Keeping 8 s.'),
-    { type: 'blockquote', content: [p('Humidity has to stay under 30% or none of this reproduces.')] },
+  [1, 'Project 1', doc(
+    line(plain('6 s is worse, 10 s matches 8 s, so 8 s stays. Roughly '),
+         plain('$\\sigma \\approx 6\\,\\mathrm{nm}$'), plain(' either way.')),
   )],
-  [1, 'Simulation', doc(
-    p('Coarse-grained run finished overnight.'),
+  [1, 'Project 2', doc(
+    p('Overnight run finished.'),
     { type: 'codeBlock', attrs: { language: 'python' },
       content: [{ type: 'text', text: 'rg = md.compute_rg(traj)\nprint(rg.mean(), rg.std())' }] },
   )],
   [1, 'Group meeting', doc(
-    p('Talk: condensate ageing. Stickers cross-link, diffusion slows — worth reading up on.'),
+    p('Talk: condensate ageing — stickers cross-link, diffusion slows.'),
+    { type: 'mermaidBlock', attrs: { code: 'graph LR\n  idea --> experiment\n  experiment --> paper' } },
   )],
-  [0, 'Simulation', doc(
-    p('Comparing against experiment today. Numbers are in the same ballpark, writing it up.'),
+  [0, 'Project 2', doc(
+    p('Comparing against experiment today. Same ballpark, writing it up.'),
   )],
-  [0, 'Graphene', doc(
+  [0, 'Project 1', doc(
     p('Thicker PMMA fixed the tearing. Two clean transfers in a row.'),
   )],
 ]
