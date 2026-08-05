@@ -156,7 +156,7 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
       {t.hasNewer && <button className="load-newer" onClick={() => t.loadNewer()}>Load newer ↓</button>}
       {showToday && !hasTodayGroup && (
         <section data-day={today}>
-          <DayHeader day={today} note="" showAsides={showAsides}
+          <DayHeader day={today} note={t.days.find(d => d.day === today)?.note ?? ''} showAsides={showAsides}
             onNoteSaved={(day, text) => t.applyNote(day, text)} />
           <div className="day-cards">
             {(composers[today] ?? []).map(key => (

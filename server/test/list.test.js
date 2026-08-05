@@ -67,3 +67,43 @@ describe('entries list', () => {
     expect(j).toEqual([{ day: '2026-07-01', count: 2 }, { day: '2026-07-03', count: 1 }])
   })
 })
+
+describe('只有碎碎念、没有卡片的日子', () => {
+  it('照样出现在时间流里（否则那句话再也看不到）', async () => {
+    await app.request('/api/day-notes/2026-07-01', {
+      method: 'PUT', headers: H(), body: JSON.stringify({ text: '今天只留一句话' }),
+    })
+    const j = await (await app.request('/api/entries?limit=50', { headers: H() })).json()
+    const day = j.days.find(d => d.day === '2026-07-01')
+    expect(day).toBeTruthy()
+    expect(day.note).toBe('今天只留一句话')
+    expect(day.entries).toEqual([])
+  })
+
+  it('删掉当天最后一张卡片，碎碎念仍在', async () => {
+    const e = await seed('2026-07-02', '唯一一张卡片')
+    await app.request('/api/day-notes/2026-07-02', {
+      method: 'PUT', headers: H(), body: JSON.stringify({ text: '别把我一起删了' }),
+    })
+    await app.request(`/api/entries/${e.id}`, { method: 'DELETE', headers: H() })
+    const j = await (await app.request('/api/entries?limit=50', { headers: H() })).json()
+    expect(j.days.find(d => d.day === '2026-07-02')?.note).toBe('别把我一起删了')
+  })
+
+  it('空白碎碎念不会凭空造出一天', async () => {
+    await app.request('/api/day-notes/2026-07-03', {
+      method: 'PUT', headers: H(), body: JSON.stringify({ text: '   ' }),
+    })
+    const j = await (await app.request('/api/entries?limit=50', { headers: H() })).json()
+    expect(j.days.some(d => d.day === '2026-07-03')).toBe(false)
+  })
+
+  it('before 翻页时也照样带上这种日子', async () => {
+    await seed('2026-07-20', '较新的一条')
+    await app.request('/api/day-notes/2026-07-10', {
+      method: 'PUT', headers: H(), body: JSON.stringify({ text: '更早的一句话' }),
+    })
+    const j = await (await app.request('/api/entries?limit=50&before=2026-07-15', { headers: H() })).json()
+    expect(j.days.some(d => d.day === '2026-07-10')).toBe(true)
+  })
+})

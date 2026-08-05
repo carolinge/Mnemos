@@ -1,15 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../api'
+import { ColorWheel } from './ColorWheel'
 
 export interface Project {
   id: string; name: string; color: string; archived: number; position?: number
 }
-
-// 任务配色盘：与服务端 entries.js 的 PALETTE 一致，另加几个中性色
-const SWATCHES = [
-  '#e05252', '#e08d52', '#d9a13b', '#6cae3f', '#3fae8c',
-  '#4a90d9', '#7a6fd9', '#c45fb8', '#8a877e', '#5b6b7a',
-]
 
 export function Sidebar({ active, onSelect, refreshKey }: {
   active: string | null
@@ -36,8 +31,17 @@ export function Sidebar({ active, onSelect, refreshKey }: {
 
   async function setColor(id: string, color: string) {
     setProjects(ps => ps.map(p => p.id === id ? { ...p, color } : p))   // 先变色，不等网络
-    setPickerFor(null)
     await api(`/api/projects/${id}`, { method: 'PATCH', body: JSON.stringify({ color }) })
+  }
+
+  // 新任务：建一张空卡片带上这个任务名，任务就出现了
+  async function addTask() {
+    const name = window.prompt('New task name')?.trim()
+    if (!name) return
+    await api('/api/entries', { method: 'POST', body: JSON.stringify({ task: name }) })
+    const list = await api<Project[]>('/api/projects')
+    setProjects(list)
+    onSelect(list.find(p => p.name === name)?.id ?? null)
   }
 
   // 拖动排序：把被拖的那个插到目标位置，整份新顺序提交给服务端
@@ -98,16 +102,13 @@ export function Sidebar({ active, onSelect, refreshKey }: {
             onClick={() => archive(p.id)}>⌫</button>
 
           {pickerFor === p.id && (
-            <div className="color-pop" onMouseLeave={() => setPickerFor(null)}>
-              {SWATCHES.map(c => (
-                <button key={c} className={`swatch ${c === p.color ? 'on' : ''}`}
-                  style={{ background: c }} title={c}
-                  onClick={() => setColor(p.id, c)} />
-              ))}
-            </div>
+            <ColorWheel value={p.color} onPick={c => setColor(p.id, c)}
+              onClose={() => setPickerFor(null)} />
           )}
         </div>
       ))}
+
+      <button className="side-add" title="New task" onClick={addTask}>＋</button>
     </nav>
   )
 }

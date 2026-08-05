@@ -623,17 +623,45 @@ html { scrollbar-color: var(--border) transparent; }
 .side-dot i { width: 9px; height: 9px; border-radius: 50%; display: block; }
 .side-item .side-name { padding-left: 6px; }
 
-.color-pop {
+/* 边栏底部的新建任务按钮：平时几乎看不见，鼠标进边栏才显形 */
+.side-add {
+  margin: 6px 0 0 4px; width: 26px; height: 26px; border-radius: 50%;
+  border: 1px dashed var(--border); background: none; color: var(--muted);
+  cursor: pointer; font-size: 13px; line-height: 1;
+  opacity: 0; transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+}
+.sidebar:hover .side-add { opacity: 1; }
+.side-add:hover { color: var(--accent); border-color: var(--accent); }
+
+/* 圆形调色盘：色相绕一圈，越靠圆心越淡；下面是亮度条和十六进制输入 */
+.wheel-pop {
   position: absolute; left: 26px; top: 100%; z-index: 30;
-  display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px;
-  padding: 7px; background: var(--card); border: 1px solid var(--border);
-  border-radius: 10px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
+  display: flex; flex-direction: column; gap: 8px; align-items: center;
+  padding: 10px; background: var(--card); border: 1px solid var(--border);
+  border-radius: 12px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.16);
 }
-.color-pop .swatch {
-  width: 16px; height: 16px; border-radius: 50%; cursor: pointer;
-  border: 2px solid transparent;
+.wheel {
+  width: 132px; height: 132px; border-radius: 50%; cursor: crosshair;
+  background:
+    radial-gradient(circle, #fff 0%, transparent 70%),
+    conic-gradient(from 90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00);
+  border: 1px solid var(--border);
 }
-.color-pop .swatch.on { border-color: var(--fg); }
+.wheel-light {
+  width: 132px; height: 4px; -webkit-appearance: none; appearance: none;
+  border-radius: 2px; background: linear-gradient(90deg, #000, #888, #fff);
+  cursor: pointer;
+}
+.wheel-light::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--card); border: 1px solid var(--muted); cursor: pointer;
+}
+.wheel-hex {
+  width: 132px; text-align: center; font-family: var(--mono); font-size: 12px;
+  padding: 4px; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--fg); outline: none;
+}
+.wheel-hex:focus { border-color: var(--accent); }
 
 
 /* ---------- 确认弹窗（与卡片同质感） ---------- */

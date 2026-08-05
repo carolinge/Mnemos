@@ -77,16 +77,31 @@ export function entriesRoutes(app, db) {
     }
 
     const taskCond = project ? 'AND e.task_id = ?' : ''
-    const p1 = project ? [project] : []
     let dayCond = ''
-    if (before) { dayCond = 'AND e.day < ?'; p1.push(before) }
-    if (after) { dayCond = 'AND e.day > ?'; p1.push(after) }
-    p1.push(limit)
+    let dayArg = null
+    if (before) { dayCond = 'AND e.day < ?'; dayArg = before }
+    if (after) { dayCond = 'AND e.day > ?'; dayArg = after }
     const order = after ? 'ASC' : 'DESC'
+
+    // 只写了碎碎念、还没有卡片的日子也要出现，否则那句话再也显示不出来。
+    // 按任务筛选时不并入：那种视图看的是任务，不是某一天。
+    const noteCond = dayCond.replace('e.day', 'n.day')
+    const noteDays = project ? '' :
+      `UNION SELECT n.day FROM day_notes n WHERE TRIM(n.text) <> '' ${noteCond}`
+
+    const args = [
+      ...(project ? [project] : []),      // entries 分支的 task_id
+      ...(dayArg ? [dayArg] : []),        // entries 分支的 before/after
+      ...(project ? [] : dayArg ? [dayArg] : []),   // day_notes 分支的 before/after
+      limit,
+    ]
     const days = db.prepare(`
-      SELECT DISTINCT e.day FROM entries e
-      WHERE e.deleted_at IS NULL ${taskCond} ${dayCond} ORDER BY e.day ${order} LIMIT ?
-    `).all(...p1).map(r => r.day)
+      SELECT day FROM (
+        SELECT DISTINCT e.day AS day FROM entries e
+        WHERE e.deleted_at IS NULL ${taskCond} ${dayCond}
+        ${noteDays}
+      ) ORDER BY day ${order} LIMIT ?
+    `).all(...args).map(r => r.day)
     days.sort().reverse()   // 统一为降序输出
     const rows = days.length ? db.prepare(`
       SELECT e.* FROM entries e

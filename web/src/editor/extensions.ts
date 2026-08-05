@@ -61,7 +61,12 @@ export function buildExtensions(opts: ExtensionOpts) {
     TableRow,
     TableHeader,
     TableCell,
-    Mathematics,
+    // 默认正则是 /\$([^$]*)\$/，会把 $$…$$ 读成一对空的 $ $，
+    // 块级公式因此整段漏成源码。改成两种都吃，$$ 的那一版走 KaTeX 的 display 模式。
+    Mathematics.configure({
+      regex: /\$\$([^$]+)\$\$|\$(?!\s)([^$\n]*[^$\s])\$/g,
+      katexOptions: { throwOnError: false },
+    }),
     CitationNode,
     ResizableImage,
     MermaidBlock,

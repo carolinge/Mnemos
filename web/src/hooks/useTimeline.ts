@@ -81,8 +81,9 @@ export function useTimeline(project: string | null, anchor: string | null) {
   }, [])
 
   const removeEntry = useCallback((id: string) => {
+    // 留下只剩碎碎念的日子，否则删掉最后一张卡片会把那句话一起带走
     setDays(cur => cur.map(d => ({ ...d, entries: d.entries.filter(e => e.id !== id) }))
-      .filter(d => d.entries.length > 0))
+      .filter(d => d.entries.length > 0 || d.note?.trim()))
   }, [])
 
   // 为还没有任何条目的日期插一个空分组，让它先在时间流里占好位置

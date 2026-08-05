@@ -24,3 +24,18 @@ describe('buildExtensions', () => {
     }
   })
 })
+
+describe('公式渲染', () => {
+  it('$$…$$ 与 $…$ 都能被识别（默认正则只认后者，块级公式会漏成源码）', () => {
+    const math = buildExtensions({}).find(e => e.name === 'Mathematics')!
+    const re: RegExp = (math.options as { regex: RegExp }).regex
+    const grab = (t: string) => {
+      re.lastIndex = 0
+      return [...t.matchAll(re)].map(m => m[1] ?? m[2])
+    }
+    expect(grab('$$F = -k_B T \\ln Z$$')).toEqual(['F = -k_B T \\ln Z'])
+    expect(grab('inline $E=mc^2$ here')).toEqual(['E=mc^2'])
+    expect(grab('$a$ and $b$')).toEqual(['a', 'b'])
+    expect(grab('costs $5 and $7')).toEqual([])   // 不该把价格当公式
+  })
+})

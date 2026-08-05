@@ -118,7 +118,12 @@ export const SAMPLE_CARDS = [
     { type: 'mermaidBlock', attrs: { code: 'graph LR\n  idea --> experiment\n  experiment --> paper' } },
   )],
   [0, 'Project 2', doc(
-    p('Comparing against experiment today. Same ballpark, writing it up.'),
+    h2('Why the partition function factorises'),
+    line(plain('For non-interacting particles the energy is additive, so '),
+         plain('$Z_N = Z_1^{\\,N}/N!$'),
+         plain(' and the free energy becomes extensive:')),
+    p('$$F = -k_B T \\ln Z = -N k_B T \\left[\\ln\\frac{V}{N\\lambda^3} + 1\\right]$$'),
+    p('The 1/N! is what keeps S extensive — drop it and mixing two identical gases raises the entropy.'),
   )],
   [0, 'Project 1', doc(
     p('Thicker PMMA fixed the tearing. Two clean transfers in a row.'),
