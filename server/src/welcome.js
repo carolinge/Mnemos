@@ -105,8 +105,10 @@ export const SAMPLE_CARDS = [
     ] },
   )],
   [1, 'Project 1', doc(
-    line(plain('6 s is worse, 10 s matches 8 s, so 8 s stays. Roughly '),
-         plain('$\\sigma \\approx 6\\,\\mathrm{nm}$'), plain(' either way.')),
+    line(plain('Roughness follows the usual scaling with spin speed, '),
+         plain('$\\sigma \\propto \\omega^{-1/2}$'), plain(', so:')),
+    p('$$\\sigma(\\omega) = \\sigma_0\\sqrt{\\frac{\\omega_0}{\\omega}}\\,e^{-t/\\tau}$$'),
+    p('Fit gives τ ≈ 4 s, which is why 8 s and 10 s look identical.'),
   )],
   [1, 'Project 2', doc(
     p('Overnight run finished.'),
