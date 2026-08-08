@@ -34,6 +34,17 @@ export function looksLikeHtmlSource(text: string): boolean {
   return /^\s*<(!doctype|html|head|body|div|section|article|main|svg|style|script|table|figure|canvas)\b/i.test(text)
 }
 
+// 粘贴时该走哪条路。抽成纯函数，好单独测顺序。
+export type PasteAction = 'citation' | 'embed-source' | 'embed-html' | 'default'
+
+export function choosePaste(text: string, html: string): PasteAction {
+  if (text && isCitationUrl(text)) return 'citation'
+  // 整份 HTML 文档：不管剪贴板里有没有 text/html，都按源码嵌入
+  if (looksLikeHtmlSource(text)) return 'embed-source'
+  if (html && classifyHtml(html) === 'embed') return 'embed-html'
+  return 'default'
+}
+
 export function insertHtmlEmbed(view: EditorView, html: string) {
   const node = view.state.schema.nodes.htmlEmbed.create({ html })
   view.dispatch(view.state.tr.replaceSelectionWith(node).scrollIntoView())
@@ -57,10 +68,13 @@ export const PasteRules = Extension.create({
           const files = pickImageFiles(event.clipboardData?.files ?? [])
           if (files.length) { void insertImages(view, files); return true }
           const text = event.clipboardData?.getData('text/plain')?.trim() ?? ''
-          if (text && isCitationUrl(text)) { insertCitation(view, text); return true }
           const html = event.clipboardData?.getData('text/html') ?? ''
-          if (html && classifyHtml(html) === 'embed') { insertHtmlEmbed(view, html); return true }
-          if (!html && looksLikeHtmlSource(text)) { insertHtmlEmbed(view, text); return true }
+          const action = choosePaste(text, html)
+          if (action === 'citation') { insertCitation(view, text); return true }
+          // 源码优先于剪贴板的 text/html：从代码视图复制时两种都在，
+          // 走 html 分支会把带高亮的代码当正文粘进来，糊一大片。
+          if (action === 'embed-source') { insertHtmlEmbed(view, text); return true }
+          if (action === 'embed-html') { insertHtmlEmbed(view, html); return true }
           if (html) {
             // 内容型：交给默认粘贴（可编辑），但给一个「改为嵌入块」的逃生口
             window.dispatchEvent(new CustomEvent('parchment:toast', {
@@ -77,8 +91,16 @@ export const PasteRules = Extension.create({
           return false
         },
         handleDrop: (view, event) => {
-          const files = pickImageFiles(event.dataTransfer?.files ?? [])
+          const all = Array.from(event.dataTransfer?.files ?? [])
+          const files = pickImageFiles(all)
           if (files.length) { event.preventDefault(); void insertImages(view, files); return true }
+          // 拖一个 .html 进来（比如 artifact 下载下来的那个文件）→ 直接变嵌入块
+          const page = all.find(f => /\.html?$/i.test(f.name) || f.type === 'text/html')
+          if (page) {
+            event.preventDefault()
+            page.text().then(t => insertHtmlEmbed(view, t))
+            return true
+          }
           return false
         },
       },
