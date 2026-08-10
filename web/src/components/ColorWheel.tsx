@@ -3,11 +3,14 @@ import { useRef, useState } from 'react'
 // 圆形调色盘：色相绕一圈，越靠圆心越淡。亮度用下面的细长条，也可以直接输 #rrggbb。
 // 盘面是两层 CSS 渐变叠出来的，取色靠极坐标算，不需要 canvas 或额外依赖。
 
-function hslToHex(h: number, s: number, l: number) {
+// h 0–360, s 与 l 都是百分数。注意 l 必须先归一到 0–1 再参与 min(l, 1-l)，
+// 否则 min(85, -84) 会让整个算式变负，输出 '#-130d...' 这种非法颜色。
+export function hslToHex(h: number, s: number, lPct: number) {
+  const l = lPct / 100
   const a = (s * Math.min(l, 1 - l)) / 100
   const f = (n: number) => {
     const k = (n + h / 30) % 12
-    const c = l / 100 - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))
+    const c = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))
     return Math.round(255 * c).toString(16).padStart(2, '0')
   }
   return `#${f(0)}${f(8)}${f(4)}`
@@ -62,6 +65,11 @@ export function ColorWheel({ value, onPick, onClose }: {
           setHex(c)
           onPick(c)
         }} />
+
+      <div className="wheel-preview">
+        <i style={{ background: /^#[0-9a-fA-F]{6}$/.test(hex) ? hex : 'transparent' }} />
+        <span>{hex}</span>
+      </div>
 
       <input className="wheel-hex" value={hex} spellCheck={false} aria-label="Hex colour"
         onChange={e => {

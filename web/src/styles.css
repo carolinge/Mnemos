@@ -688,3 +688,14 @@ html { scrollbar-color: var(--border) transparent; }
 .confirm-ok { border-color: transparent; background: var(--accent); color: #fff; }
 .confirm-ok.danger { background: var(--danger); }
 .confirm-ok:hover { filter: brightness(1.08); }
+
+/* 调色盘顶部的当前颜色预览 */
+.wheel-preview { display: flex; align-items: center; gap: 8px; align-self: stretch; }
+.wheel-preview i {
+  width: 22px; height: 22px; border-radius: 6px; flex: 0 0 auto;
+  border: 1px solid var(--border);
+}
+.wheel-preview span { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+
+/* 时间流底部留白：写到最后一张卡片时也不会贴在屏幕最下沿 */
+.timeline { padding-bottom: 45vh; }

@@ -177,6 +177,8 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
             onClick={() => editor.chain().focus().toggleItalic().run()}><i>I</i></button>
           <button className={editor.isActive('code') ? 'on' : ''}
             onClick={() => editor.chain().focus().toggleCode().run()}>{'<>'}</button>
+          <button className={editor.isActive('strike') ? 'on' : ''} title="Strikethrough (⌥⇧5)"
+            onClick={() => editor.chain().focus().toggleStrike().run()}><s>S</s></button>
           <button className={editor.isActive('highlight') ? 'on' : ''}
             onClick={() => editor.chain().focus().toggleHighlight().run()}>H</button>
           <button title="Link (⌘K)" onClick={promptLink}>🔗</button>
