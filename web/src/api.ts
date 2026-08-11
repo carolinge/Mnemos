@@ -18,13 +18,18 @@ function setWaking(on: boolean) {
   window.dispatchEvent(new CustomEvent('parchment:waking', { detail: on }))
 }
 
+// 生产环境挂在主站的 /mnemos 下（见 vite.config.ts 的 base），本地开发仍在根路径——
+// import.meta.env.BASE_URL 会跟着 base 一起变。fetch() 走这里统一加前缀；
+// 导出菜单那几个裸 <a href> 不经过 fetch，得自己 import 这个常量来拼。
+export const API_PREFIX = import.meta.env.BASE_URL.replace(/\/$/, '')
+
 async function fetchWithWake(path: string, init?: RequestInit): Promise<Response> {
   let lastErr: unknown
   for (let attempt = 0; attempt <= RETRIES; attempt++) {
     inFlight++
     const slow = setTimeout(() => setWaking(true), WAKING_AFTER_MS)
     try {
-      return await fetch(path, init)
+      return await fetch(API_PREFIX + path, init)
     } catch (e) {
       lastErr = e                     // 网络层失败：机器可能正在起来，缓一下重试
       if (attempt < RETRIES) await new Promise(r => setTimeout(r, 800 * (attempt + 1)))

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { api, onUnauthorized } from './api'
+import { api, onUnauthorized, API_PREFIX } from './api'
 import { Login } from './components/Login'
 import { SaveDot } from './components/SaveDot'
 import { Timeline } from './components/Timeline'
@@ -85,13 +85,13 @@ export default function App() {
           <button className="icon-btn" title="Export" onClick={() => setExportOpen(v => !v)}>⤓</button>
           {exportOpen && (
             <div className="export-menu" onMouseLeave={() => setExportOpen(false)}>
-              <a href="/api/export?format=full" onClick={() => setExportOpen(false)}>
+              <a href={`${API_PREFIX}/api/export?format=full`} onClick={() => setExportOpen(false)}>
                 Single Markdown<small>One file, opens in Typora</small>
               </a>
-              <a href="/api/export?format=monthly" onClick={() => setExportOpen(false)}>
+              <a href={`${API_PREFIX}/api/export?format=monthly`} onClick={() => setExportOpen(false)}>
                 Split by month<small>One .md per month</small>
               </a>
-              <a href="/api/export?format=print" target="_blank" rel="noreferrer"
+              <a href={`${API_PREFIX}/api/export?format=print`} target="_blank" rel="noreferrer"
                 onClick={() => setExportOpen(false)}>
                 Print / save PDF<small>Opens a new tab, then ⌘P</small>
               </a>

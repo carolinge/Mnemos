@@ -1,7 +1,8 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/mnemos/' : '/',
   plugins: [react()],
   server: {
     proxy: {
@@ -15,4 +16,4 @@ export default defineConfig({
     globals: true,
     setupFiles: './test/setup.ts',
   },
-})
+}))
