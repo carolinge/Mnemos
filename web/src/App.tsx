@@ -8,6 +8,7 @@ import { CommandPalette } from './components/CommandPalette'
 import { TimeScrubber } from './components/TimeScrubber'
 import { Lightbox } from './components/Lightbox'
 import { Toast } from './components/Toast'
+import { recoverDrafts } from './lib/recoverDrafts'
 
 export default function App() {
   const [authed, setAuthed] = useState<boolean | null>(null)
@@ -31,6 +32,34 @@ export default function App() {
     if (!authed) return
     api<Project[]>('/api/projects').then(setProjects).catch(() => {})
   }, [authed, projRefresh, paletteOpen])
+
+  // 断网时写在「还没保存过的新卡片」里的字会留在 localStorage，但刷新后没有任何
+  // 组件会再读它——启动时把这些补传成正式条目。联网事件也触发一次，免得非要重开页面。
+  useEffect(() => {
+    if (!authed) return
+    let done = false     // StrictMode 下 effect 会跑两次，别补传两遍
+    const flush = async () => {
+      if (done) return
+      done = true
+      try {
+        const r = await recoverDrafts(body =>
+          api('/api/entries', { method: 'POST', body: JSON.stringify(body) }))
+        if (r.recovered > 0) {
+          setProjRefresh(k => k + 1)
+          window.dispatchEvent(new CustomEvent('parchment:toast', {
+            detail: {
+              message: r.recovered === 1
+                ? `Recovered 1 unsaved note (${r.days[0]})`
+                : `Recovered ${r.recovered} unsaved notes (${r.days.join(', ')})`,
+            },
+          }))
+        }
+      } finally { done = false }
+    }
+    void flush()
+    window.addEventListener('online', flush)
+    return () => window.removeEventListener('online', flush)
+  }, [authed])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

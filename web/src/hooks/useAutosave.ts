@@ -34,7 +34,10 @@ export function useAutosave(opts: Opts) {
   const optsRef = useRef(opts)
   optsRef.current = opts
 
-  const key = `draft:${opts.draftKey}`
+  // 草稿键必须能变：卡片一旦落库，键要从 new:<uuid> 迁到它的服务器 id。
+  // 不迁的话，这张卡片的草稿会一直看起来像「从没存过」，恢复逻辑会再 POST 一次，
+  // 把一条笔记变成两条。
+  const keyRef = useRef(`draft:${opts.draftKey}`)
 
   function setStatus(s: SaveState) {
     setLocal(s)
@@ -53,7 +56,9 @@ export function useAutosave(opts: Opts) {
         })
         idRef.current = e.id
         versionRef.current = e.version
-        localStorage.removeItem(key)
+        localStorage.removeItem(keyRef.current)
+        keyRef.current = `draft:${e.id}`   // 从此按 id 存草稿
+        localStorage.removeItem(keyRef.current)
         retryMs.current = RETRY_BASE_MS
         setStatus('saved')
         optsRef.current.onCreated?.(e)
@@ -71,7 +76,7 @@ export function useAutosave(opts: Opts) {
         body: JSON.stringify({ ...payload, version: versionRef.current }),
       })
       versionRef.current = e.version
-      localStorage.removeItem(key)
+      localStorage.removeItem(keyRef.current)
       retryMs.current = RETRY_BASE_MS
       setStatus('saved')
       optsRef.current.onSaved?.(e)
@@ -92,14 +97,18 @@ export function useAutosave(opts: Opts) {
   }
 
   function schedule() {
-    localStorage.setItem(key, JSON.stringify({ at: Date.now(), payload: optsRef.current.getPayload() }))
+    localStorage.setItem(keyRef.current, JSON.stringify({
+      at: Date.now(),
+      day: optsRef.current.day,          // 恢复时要知道这段字属于哪一天
+      payload: optsRef.current.getPayload(),
+    }))
     setStatus('saving')
     clearTimeout(timer.current)
     timer.current = setTimeout(save, DEBOUNCE_MS)
   }
 
   useEffect(() => {
-    if (localStorage.getItem(key)) schedule()   // 上次断网留下的草稿，补发
+    if (localStorage.getItem(keyRef.current)) schedule()   // 上次断网留下的草稿，补发
     return () => {
       clearTimeout(timer.current)
       setSaveStatus(optsRef.current.draftKey, null)
