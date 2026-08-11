@@ -34,7 +34,7 @@ function fakeStore(entries: Record<string, string>): Storage {
 
 const doc = (t: string) => ({ type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: t }] }] })
 
-describe.runIf(process.env.E2E === '1')('断网草稿补传（对真实服务器）', () => {
+describe.runIf(import.meta.env.VITE_E2E === '1')('断网草稿补传（对真实服务器）', () => {
   it('孤儿草稿补传后，服务器上能查到这段字', async () => {
     expect(up).toBe(true)
     const text = `断网时写的 ${Date.now()}`

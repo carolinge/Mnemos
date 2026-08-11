@@ -8,6 +8,7 @@ import { CommandPalette } from './components/CommandPalette'
 import { TimeScrubber } from './components/TimeScrubber'
 import { Lightbox } from './components/Lightbox'
 import { Toast } from './components/Toast'
+import { Waking } from './components/Waking'
 import { recoverDrafts } from './lib/recoverDrafts'
 
 export default function App() {
@@ -130,6 +131,7 @@ export default function App() {
         onSelectProject={id => { setProject(id); setAnchor(null) }} />
       <Lightbox />
       <Toast />
+      <Waking />
     </div>
   )
 }
