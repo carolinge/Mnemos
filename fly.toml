@@ -11,12 +11,12 @@ primary_region = "sin"
 [http_service]
   internal_port = 8787
   force_https = true
-  # 常驻一台：冷启动 7 秒对随手记笔记来说太久。512MB 常驻约 $3.4/月，
-  # 加上两个数据卷 $0.6，仍在 $5 以内。主站那台继续闲置即停——
-  # 两台都常驻就超预算了。
+  # 笔记本已经并入 carolinge-homepage（/mnemos），常驻改到那边了。
+  # 这台不再对外挂域名，改回闲置即停——app 和卷都留着当回滚，
+  # 但没必要为一台没人访问的机器继续付常驻的钱。
   auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 1
+  min_machines_running = 0
 
 [[vm]]
   size = "shared-cpu-1x"
