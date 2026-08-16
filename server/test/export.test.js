@@ -65,10 +65,18 @@ describe('pmToMarkdown', () => {
     expect(md).toContain('| 列1 | 列2 |')
     expect(md).toContain('| --- | --- |')
     expect(md).toContain('| a | b |')
-    expect(md).toContain('![](../../images/2026/07/abc.png)')
+    expect(md).toContain('![](../../images/2026/07/abc.png "w50")')
     expect(md).toContain('[Paper (2024) · Nat.](https://doi.org/10.1/x)')
     expect(md).toContain('[交互内容](embeds/e1.html)')
     expect(embeds.length).toBe(1)
+  })
+
+  it('图片 width 经过 markdown 往返不丢（切源码/切渲染会走这条路）', () => {
+    const doc = { type: 'doc', content: [
+      P({ type: 'image', attrs: { src: '/images/2026/08/x.png', alt: 'caption', width: 40 } }),
+    ] }
+    const back = mdToPm(pmToMarkdown(doc))
+    expect(back.content[0].content[0].attrs).toEqual({ src: '/images/2026/08/x.png', alt: 'caption', width: 40 })
   })
 })
 

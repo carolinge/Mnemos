@@ -230,7 +230,9 @@ const INLINE_PATTERNS = [
 ]
 
 const LINK_RE = /\[([^\]]*)\]\(([^)\s]+)\)/
-const IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)\)/
+// Third group is the optional title slot pmToMarkdown stashes width in
+// (`![alt](src "w40")`) — standard Markdown syntax, just repurposed.
+const IMAGE_RE = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"([^"]*)")?\)/
 const BARE_URL_RE = /https?:\/\/[^\s<>()]+[^\s<>().,;:!?]/
 // 块级 $$…$$ 必须先于行内 $…$ 匹配，否则会被从中间切开
 const MATH_RE = /\$\$[^\n]*?\$\$|\$[^$\n]+\$/
@@ -246,9 +248,11 @@ function inlineNodes(s, marks) {
   // 图片先于链接（语法只差一个 !）
   const img = s.match(IMAGE_RE)
   if (img && img.index !== undefined) {
+    const width = img[3]?.match(/^w(\d+)$/)?.[1]
+    const attrs = { src: img[2], alt: img[1] || null, ...(width ? { width: Number(width) } : {}) }
     return [
       ...inlineNodes(s.slice(0, img.index), marks),
-      { type: 'image', attrs: { src: img[2], alt: img[1] || null } },
+      { type: 'image', attrs },
       ...inlineNodes(s.slice(img.index + img[0].length), marks),
     ]
   }

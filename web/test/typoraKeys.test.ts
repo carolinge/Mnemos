@@ -113,4 +113,15 @@ describe('Typora 快捷键', () => {
     press('Tab')
     expect(press('Shift-Tab')).toBe(true)
   })
+
+  it('Mod-\\ 清除格式：粗体/高亮标记和标题都回到纯正文', () => {
+    ed.commands.setTextSelection(2)
+    ed.chain().setHeading({ level: 2 }).selectAll().toggleBold().toggleHighlight().run()
+    expect(ed.isActive('heading', { level: 2 })).toBe(true)
+    expect(ed.isActive('bold')).toBe(true)
+    press('Mod-\\')
+    expect(ed.isActive('paragraph')).toBe(true)
+    expect(ed.isActive('bold')).toBe(false)
+    expect(ed.isActive('highlight')).toBe(false)
+  })
 })

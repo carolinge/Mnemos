@@ -19,6 +19,7 @@ import { TextSelection } from '@tiptap/pm/state'
 //   公式块          Mod-Shift-M          Mod-Alt-B
 //   删除线          Alt-Shift-5          Ctrl-Shift-`
 //   缩进 / 反缩进    Mod-[ / Mod-] 或 Tab / Shift-Tab
+//   清除格式         Mod-\                同
 //
 // 需要弹窗的两个（链接、图片）由外部注入回调，键位定义留在这里集中管理。
 
@@ -75,6 +76,11 @@ export const TyporaKeys = (hooks: TyporaKeyHooks = {}) => Extension.create({
         return true
       }).run()
 
+    // Clear formatting: drop inline marks (bold/italic/…) and reset the
+    // block back to a plain paragraph — the standard "strip whatever this
+    // pasted-in content brought with it" command.
+    const clearFormat = () => editor.chain().focus().clearNodes().unsetAllMarks().run()
+
     const link = () => { hooks.onLink?.(); return true }
     const image = () => { hooks.onImage?.(); return true }
 
@@ -111,6 +117,7 @@ export const TyporaKeys = (hooks: TyporaKeyHooks = {}) => Extension.create({
 
       'Mod-[': () => indent() || false,
       'Mod-]': () => outdent() || false,
+      'Mod-\\': () => { clearFormat(); return true },
       Tab: () => (inList() ? indent() : false),      // 不在列表里就把 Tab 还给编辑器
       'Shift-Tab': () => (inList() ? outdent() : false),
     }

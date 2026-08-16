@@ -167,7 +167,16 @@ function marks(n) {
 }
 
 const text = n => (n.content || []).map(c => c.text || text(c)).join('')
-const img = (n, ctx) => `![](${(n.attrs?.src || '').replace(/^\/images\//, ctx.imgPrefix)})`
+// width (a % set by dragging the resize handle) has no standard Markdown
+// syntax — stash it in the title slot (`"w40"`), which every Markdown
+// renderer already tolerates as an optional, harmless hover tooltip.
+// mdToPm's IMAGE_RE reads it back on the way in.
+const img = (n, ctx) => {
+  const src = (n.attrs?.src || '').replace(/^\/images\//, ctx.imgPrefix)
+  const alt = n.attrs?.alt || ''
+  const title = n.attrs?.width ? ` "w${n.attrs.width}"` : ''
+  return `![${alt}](${src}${title})`
+}
 function citeMd(n) {
   const a = n.attrs || {}
   const label = a.title
