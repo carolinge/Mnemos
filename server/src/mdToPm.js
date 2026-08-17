@@ -104,10 +104,13 @@ function parseBlocks(lines) {
         const cur = lines[i]
         const t = cur.trim()
         if (!t) {
-          // 空行：后面若仍是同块列表则并入，否则结束
+          // 空行：后面缩进更深就并入（不管是不是列表行——列表项内的第二段
+          // 普通段落，跟嵌套列表一样，都比 baseIndent 深）；缩进相同则只有
+          // 还是列表行（兄弟项）才并入；否则结束。
           const next = lines[i + 1]
-          if (next && next.trim() && indentOf(next) >= baseIndent &&
-              (TASK_ITEM_RE.test(next.trim()) || BULLET_RE.test(next.trim()) || ORDERED_RE.test(next.trim()))) {
+          const nextIndent = next ? indentOf(next) : -1
+          const nextIsItem = next && (TASK_ITEM_RE.test(next.trim()) || BULLET_RE.test(next.trim()) || ORDERED_RE.test(next.trim()))
+          if (next && next.trim() && (nextIndent > baseIndent || (nextIndent === baseIndent && nextIsItem))) {
             i++
             continue
           }

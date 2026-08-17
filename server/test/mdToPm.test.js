@@ -36,6 +36,19 @@ describe('mdToPm 块级', () => {
     expect(d.content[0].content.length).toBe(2)
   })
 
+  it('列表项内的第二段普通段落（非嵌套列表）留在同一个列表里，不会被拆成独立段落', () => {
+    // pmToMarkdown 在一个列表项的多个段落之间总是插入空行，所以这是往返时
+    // 真实会产生的形状——之前空行后的续行必须"看起来也像列表项"才会并入，
+    // 导致这种纯文本续行把列表从中间拆成两截，续行本身顶格飞出列表外。
+    const d = mdToPm('1. 第一\n2. 得到\n\n  大房东if就\n3. 第三\n4. 第四\n')
+    expect(types(d)).toEqual(['orderedList'])
+    const items = d.content[0].content
+    expect(items.length).toBe(4)
+    expect(items[1].content.map(n => n.type)).toEqual(['paragraph', 'paragraph'])
+    expect(firstText(items[1].content[0])).toContain('得到')
+    expect(firstText(items[1].content[1])).toContain('大房东if就')
+  })
+
   it('待办清单', () => {
     const d = mdToPm('- [x] 已做\n- [ ] 未做\n')
     expect(types(d)).toEqual(['taskList'])

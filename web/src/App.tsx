@@ -9,6 +9,7 @@ import { TimeScrubber } from './components/TimeScrubber'
 import { Lightbox } from './components/Lightbox'
 import { Toast } from './components/Toast'
 import { Waking } from './components/Waking'
+import { ShortcutsHelp } from './components/ShortcutsHelp'
 import { recoverDrafts } from './lib/recoverDrafts'
 
 export default function App() {
@@ -104,6 +105,7 @@ export default function App() {
           document.documentElement.dataset.theme = next
           localStorage.setItem('theme', next)
         }}>◐</button>
+        <ShortcutsHelp />
         <button className={`icon-btn ${showAsides ? '' : 'off'}`}
           title={showAsides ? 'Hide daily notes' : 'Show daily notes'}
           onClick={() => {

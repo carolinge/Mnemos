@@ -1,27 +1,42 @@
-import { Extension } from '@tiptap/core'
+import { Extension, InputRule } from '@tiptap/core'
 import { TextSelection } from '@tiptap/pm/state'
+
+// 行首打两个 $ 再打一个空格，等同 Mod-Shift-M——跟 MermaidBlock 的
+// ```mermaid 输入规则同一个机制（见 test/mermaid.test.ts），空格触发，
+// 不是 Enter：Enter 在 ProseMirror 里走的是分段命令，不会经过输入规则这条
+// 路径，勉强接进去容易连累到正常换行。
+export const MATH_INPUT_RE = /^\$\$\s$/
 
 // 对齐 Typora 官方快捷键表（support.typora.io/Shortcut-Keys/）。
 // Mod = macOS 的 Cmd / 其他平台的 Ctrl。Mac 上 Typora 有一套自己的组合，两套都绑上。
-//
-//   功能            Windows/Linux        macOS
-//   标题 1–6        Mod-1 … Mod-6        同
-//   正文            Mod-0                同
-//   标题升/降级      Mod-+ / Mod--        同
-//   链接            Mod-K                Mod-K
-//   代码块          Mod-Shift-K          Mod-Alt-C
-//   行内代码         Mod-Shift-`          Mod-Shift-`
-//   有序列表         Mod-Shift-[          Mod-Alt-O
-//   无序列表         Mod-Shift-]          Mod-Alt-U
-//   引用            Mod-Shift-Q          Mod-Alt-Q
-//   表格            Mod-T                Mod-Alt-T
-//   图片            Mod-Shift-I          Mod-Ctrl-I
-//   公式块          Mod-Shift-M          Mod-Alt-B
-//   删除线          Alt-Shift-5          Ctrl-Shift-`
-//   缩进 / 反缩进    Mod-[ / Mod-] 或 Tab / Shift-Tab
-//   清除格式         Mod-\                同
-//
-// 需要弹窗的两个（链接、图片）由外部注入回调，键位定义留在这里集中管理。
+// 这份表既是文档也是数据——ShortcutsHelp 面板直接读它，跟下面 addKeyboardShortcuts()
+// 里真正注册的键位改到不同步。需要弹窗的两个（链接、图片）由外部注入回调。
+export const SHORTCUT_GROUPS: { title: string; items: { keys: string; desc: string }[] }[] = [
+  { title: '标题', items: [
+    { keys: 'Mod-1 … Mod-6', desc: '标题 1–6' },
+    { keys: 'Mod-0', desc: '正文' },
+    { keys: 'Mod-+ / Mod--', desc: '标题升级 / 降级' },
+  ] },
+  { title: '格式', items: [
+    { keys: 'Mod-K', desc: '链接（Chrome/Safari 常把这个键抢去地址栏，收不到就用下面那个）' },
+    { keys: 'Mod-Alt-K', desc: '链接（备用，不会被浏览器抢）' },
+    { keys: 'Mod-Shift-K / Mod-Alt-C', desc: '代码块' },
+    { keys: 'Mod-Shift-`', desc: '行内代码' },
+    { keys: 'Alt-Shift-5 / Ctrl-Shift-`', desc: '删除线' },
+    { keys: 'Mod-\\', desc: '清除格式' },
+  ] },
+  { title: '列表 / 结构', items: [
+    { keys: 'Mod-Shift-[ / Mod-Alt-O', desc: '有序列表' },
+    { keys: 'Mod-Shift-] / Mod-Alt-U', desc: '无序列表' },
+    { keys: 'Mod-Shift-Q / Mod-Alt-Q', desc: '引用' },
+    { keys: 'Mod-T / Mod-Alt-T', desc: '表格' },
+    { keys: 'Tab / Shift-Tab', desc: '列表缩进 / 反缩进（光标得先在列表项里）' },
+  ] },
+  { title: '插入', items: [
+    { keys: 'Mod-Shift-I / Mod-Ctrl-I', desc: '图片' },
+    { keys: 'Mod-Shift-M / Mod-Alt-B', desc: '公式块（行首打 "$$" 加空格也行）' },
+  ] },
+]
 
 const MAX_LEVEL = 6
 
@@ -32,6 +47,22 @@ export interface TyporaKeyHooks {
 
 export const TyporaKeys = (hooks: TyporaKeyHooks = {}) => Extension.create({
   name: 'typoraKeys',
+
+  addInputRules() {
+    return [new InputRule({
+      find: MATH_INPUT_RE,
+      handler: ({ range, chain }) => {
+        chain().deleteRange(range).insertContent('$$  $$')
+          .command(({ tr, dispatch }) => {
+            if (dispatch) {
+              const pos = Math.max(0, tr.selection.from - 3)
+              tr.setSelection(TextSelection.near(tr.doc.resolve(pos)))
+            }
+            return true
+          }).run()
+      },
+    })]
+  },
 
   addKeyboardShortcuts() {
     const editor = this.editor
@@ -90,7 +121,8 @@ export const TyporaKeys = (hooks: TyporaKeyHooks = {}) => Extension.create({
       'Mod-=': bumpHeading(-1),
       'Mod--': bumpHeading(1),
 
-      'Mod-k': link,
+      'Mod-k': link,           // 浏览器常把这个键抢去地址栏，未必收得到——见上面的表
+      'Mod-Alt-k': link,       // 不会被浏览器抢，收不到 Mod-K 时用这个
       'Mod-Shift-k': codeBlock,
       'Mod-Alt-c': codeBlock,
       'Mod-Shift-`': inlineCode,

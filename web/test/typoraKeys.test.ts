@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { Editor } from '@tiptap/core'
 import { buildExtensions } from '../src/editor/extensions'
+import { MATH_INPUT_RE } from '../src/editor/TyporaKeys'
 
 let ed: Editor
 beforeEach(() => {
@@ -112,6 +113,12 @@ describe('Typora 快捷键', () => {
     ed.commands.insertContent('乙')
     press('Tab')
     expect(press('Shift-Tab')).toBe(true)
+  })
+
+  it('输入规则正则匹配 "$$ "（真实按键触发路径见浏览器手测，insertContent 不走这条管线——跟 mermaid.test.ts 同样的限制）', () => {
+    expect('$$ '.match(MATH_INPUT_RE)).toBeTruthy()
+    expect('$ '.match(MATH_INPUT_RE)).toBeNull()
+    expect('a$$ '.match(MATH_INPUT_RE)).toBeNull()
   })
 
   it('Mod-\\ 清除格式：粗体/高亮标记和标题都回到纯正文', () => {
