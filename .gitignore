@@ -3,6 +3,7 @@ dist/
 data/
 *.log
 .DS_Store
+.superpowers/
 
 # 用户的独立项目，不属于本仓库
 riffle/
