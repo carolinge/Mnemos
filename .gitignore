@@ -8,6 +8,7 @@ data/
 # 用户的独立项目，不属于本仓库
 riffle/
 homepage/
+viscio/
 
 # 明文密钥交接包 —— 本仓库是公开的，这些绝不能进版本控制
 deploy-handoff/
