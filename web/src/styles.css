@@ -143,7 +143,7 @@ body {
 .timeline > div,
 .timeline > section,
 .timeline > p,
-.timeline > button:not(.back-today),
+.timeline > button:not(.fab),
 .timeline .year-head,
 .timeline .skeleton {
   width: 100%;
@@ -198,8 +198,6 @@ body {
   background: none; border: none; color: inherit; font-size: 14px; cursor: pointer; text-align: left;
 }
 .side-name i, .chip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-.side-archive { opacity: 0; }
-.side-item:hover .side-archive { opacity: 1; }
 .entry-tags { display: inline-flex; gap: 6px; flex-wrap: wrap; margin-left: 10px; flex: 1; }
 .chip {
   display: inline-flex; align-items: center; gap: 4px; font-size: 12px;
@@ -784,3 +782,22 @@ html { scrollbar-color: var(--border) transparent; }
 
 /* 有未完成待办的日子：时间条上标橙点 */
 .scrubber-dot.has-todo { background: #e08d52; opacity: 0.95; }
+
+
+/* ---------- 右下角悬浮按钮的说明标签 ---------- */
+/* 原生 title 要等一秒才出现、样式也不受控，这里自己画一个 */
+/* 注意：不要在这里写 position: relative —— 会盖掉按钮自己的 position: fixed，
+   把它从右下角打回正文流里。fixed 本身就是 ::after 的定位基准。 */
+.fab::after {
+  content: attr(data-label);
+  position: absolute; right: calc(100% + 10px); top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 10px; border-radius: 8px;
+  background: var(--fg); color: var(--bg);
+  font-size: 12px; line-height: 1.4; white-space: nowrap;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.12s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+.fab:hover::after, .fab:focus-visible::after { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .fab::after { transition: none; } }

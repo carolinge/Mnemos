@@ -1,4 +1,7 @@
-app = "carolinge-mnemos"
+# 自部署模板：把 app 换成你自己 `fly apps create` 出来的名字。
+# 作者本人的实例不再单独部署——Mnemos 已并进主站那个 app，挂在 /mnemos/ 下，
+# 由 homepage/scripts/sync-mnemos-src.sh 同步源码后随主站一起构建。
+app = "mnemos"
 primary_region = "sin"
 
 [env]

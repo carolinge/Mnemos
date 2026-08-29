@@ -178,18 +178,20 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
           </div>
         </section>
       )}
-      <button className="expand-all" title={expandAll.on ? 'Collapse all cards' : 'Expand all cards'}
+      <button className="fab expand-all"
+        data-label={expandAll.on ? 'Collapse all' : 'Expand all'}
         aria-label={expandAll.on ? 'Collapse all cards' : 'Expand all cards'}
         onClick={() => setExpandAll(v => ({ on: !v.on, n: v.n + 1 }))}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
           strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {/* 展开时两个箭头朝下，收起时朝上 */}
           {expandAll.on
-            ? <><path d="M4 9l8-5 8 5" /><path d="M4 15l8 5 8-5" /></>
-            : <><path d="M4 15l8 5 8-5" /><path d="M4 9l8-5 8 5" transform="rotate(180 12 6.5)" /></>}
+            ? <><path d="M6 15l6-6 6 6" /><path d="M6 21l6-6 6 6" /></>
+            : <><path d="M6 3l6 6 6-6" /><path d="M6 9l6 6 6-6" /></>}
         </svg>
       </button>
       {awayFromBottom && (
-        <button className="back-today" title="Back to today" aria-label="Back to today" onClick={() => {
+        <button className="fab back-today" data-label="Back to today" aria-label="Back to today" onClick={() => {
           if (anchor) onExitAnchor()
           else boxRef.current!.scrollTo({ top: boxRef.current!.scrollHeight, behavior: 'smooth' })
         }}>
