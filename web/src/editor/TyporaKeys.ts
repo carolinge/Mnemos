@@ -28,9 +28,13 @@ export const SHORTCUT_GROUPS: { title: string; items: { keys: string; desc: stri
   { title: '列表 / 结构', items: [
     { keys: 'Mod-Shift-[ / Mod-Alt-O', desc: '有序列表' },
     { keys: 'Mod-Shift-] / Mod-Alt-U', desc: '无序列表' },
+    { keys: 'Mod-Shift-X', desc: '待办清单（选中行按一下就变成 todo）' },
     { keys: 'Mod-Shift-Q / Mod-Alt-Q', desc: '引用' },
     { keys: 'Mod-T / Mod-Alt-T', desc: '表格' },
     { keys: 'Tab / Shift-Tab', desc: '列表缩进 / 反缩进（光标得先在列表项里）' },
+  ] },
+  { title: '保存', items: [
+    { keys: 'Mod-S', desc: '立刻保存，并把这一版钉成可回退的检查点' },
   ] },
   { title: '插入', items: [
     { keys: 'Mod-Shift-I / Mod-Ctrl-I', desc: '图片' },
@@ -43,6 +47,7 @@ const MAX_LEVEL = 6
 export interface TyporaKeyHooks {
   onLink?: () => void     // 弹出输入链接
   onImage?: () => void    // 弹出选择图片
+  onSave?: () => void     // Mod-S：立刻保存并钉一个检查点
 }
 
 export const TyporaKeys = (hooks: TyporaKeyHooks = {}) => Extension.create({
@@ -93,6 +98,8 @@ export const TyporaKeys = (hooks: TyporaKeyHooks = {}) => Extension.create({
     const orderedList = () => editor.chain().focus().toggleOrderedList().run()
     const bulletList = () => editor.chain().focus().toggleBulletList().run()
     const blockquote = () => editor.chain().focus().toggleBlockquote().run()
+    // 待办清单：Typora 没有对应键位，取 Mod-Shift-X（字母键在各键盘布局下都可靠）
+    const taskList = () => editor.chain().focus().toggleTaskList().run()
     const table = () => editor.chain().focus()
       .insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()
     const strike = () => editor.chain().focus().toggleStrike().run()
@@ -114,6 +121,7 @@ export const TyporaKeys = (hooks: TyporaKeyHooks = {}) => Extension.create({
 
     const link = () => { hooks.onLink?.(); return true }
     const image = () => { hooks.onImage?.(); return true }
+    const save = () => { hooks.onSave?.(); return true }
 
     const map: Record<string, () => boolean> = {
       'Mod-0': () => editor.chain().focus().setParagraph().run(),
@@ -132,12 +140,14 @@ export const TyporaKeys = (hooks: TyporaKeyHooks = {}) => Extension.create({
       'Mod-Shift-]': bulletList,
       'Mod-Alt-u': bulletList,
 
+      'Mod-Shift-x': taskList,
       'Mod-Shift-q': blockquote,
       'Mod-Alt-q': blockquote,
 
       'Mod-t': table,
       'Mod-Alt-t': table,
 
+      'Mod-s': save,          // 拦下浏览器的「保存网页」
       'Mod-Shift-i': image,
       'Mod-Ctrl-i': image,
 

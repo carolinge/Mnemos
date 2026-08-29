@@ -16,3 +16,4 @@ SECRETS.md
 *_token.txt
 .env
 .env.*
+web/tsconfig.tsbuildinfo

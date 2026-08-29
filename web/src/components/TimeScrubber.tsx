@@ -41,15 +41,25 @@ export function monthTicks(first: string, last: string): { day: string; frac: nu
   return out
 }
 
-export function TimeScrubber({ onJump, refreshKey }: { onJump: (day: string) => void; refreshKey: number }) {
+export function TimeScrubber({ onJump, refreshKey, project }: {
+  onJump: (day: string) => void
+  refreshKey: number
+  project?: string | null     // 只看某个任务时，刻度也只显示该任务的日子
+}) {
+  // day → 这天有没有未完成的待办（有就画成橙点）
   const [days, setDays] = useState<string[]>([])
+  const [todoDays, setTodoDays] = useState<Set<string>>(new Set())
   const [drag, setDrag] = useState<{ frac: number; day: string } | null>(null)
   const railRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    api<{ day: string; count: number }[]>('/api/days')
-      .then(r => setDays(r.map(x => x.day))).catch(() => {})
-  }, [refreshKey])
+    const q = project ? `?project=${encodeURIComponent(project)}` : ''
+    api<{ day: string; count: number; todo: number }[]>(`/api/days${q}`)
+      .then(r => {
+        setDays(r.map(x => x.day))
+        setTodoDays(new Set(r.filter(x => x.todo).map(x => x.day)))
+      }).catch(() => {})
+  }, [refreshKey, project])
 
   if (days.length < 2) return null
   const first = days[0], last = todayStr()
@@ -86,7 +96,9 @@ export function TimeScrubber({ onJump, refreshKey }: { onJump: (day: string) => 
         </div>
       ))}
       {days.map(d => (
-        <i key={d} className="scrubber-dot" style={{ top: `${((toMs(d) - toMs(first)) / span) * 100}%` }} />
+        <i key={d} className={`scrubber-dot ${todoDays.has(d) ? 'has-todo' : ''}`}
+          title={todoDays.has(d) ? `${d} — unfinished todo` : d}
+          style={{ top: `${((toMs(d) - toMs(first)) / span) * 100}%` }} />
       ))}
       {drag && (
         <div className="scrubber-thumb" style={{ top: `${drag.frac * 100}%` }}>

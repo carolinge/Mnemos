@@ -10,7 +10,7 @@ import type { Project } from './Sidebar'
 const EMPTY_DOC = { type: 'doc', content: [] }
 const COLLAPSED_MAX_PX = 140   // 折叠态约四行，超出显示「展开」
 
-export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, onDiscard, onTaskClick }: {
+export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, onDiscard, onTaskClick, expandAll }: {
   entry: EntryData | null      // null = 尚未落库的新条目
   day: string
   draftKey: string
@@ -19,6 +19,8 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
   onDeleted?: (id: string) => void
   onDiscard?: () => void       // 丢弃一张还没保存的新卡片
   onTaskClick?: (taskId: string) => void
+  // 一键展开/收起：n 变化就跟随 on，本地的展开状态被覆盖
+  expandAll?: { on: boolean; n: number }
 }) {
   // 断网草稿优先于服务器内容
   const initialContent = useMemo(() => {
@@ -35,6 +37,7 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
   taskRef.current = task
 
   const [expanded, setExpanded] = useState(false)
+  const expandN = expandAll?.n ?? 0
   const [overflowing, setOverflowing] = useState(false)
   const bodyRef = useRef<HTMLDivElement>(null)
 
@@ -42,6 +45,9 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
   const [confirming, setConfirming] = useState(false)
   const [source, setSource] = useState<string | null>(null)   // null = 渲染模式
   const [busy, setBusy] = useState(false)
+  // 链接浮动卡片：⌘K 或点中链接时出现，替代原来的浏览器 prompt
+  const [linkOpen, setLinkOpen] = useState(false)
+  const [linkDraft, setLinkDraft] = useState('')
 
   const editorRef = useRef<Editor | null>(null)
   const autosave = useAutosave({
@@ -61,10 +67,24 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
   function promptLink() {
     const ed = editorRef.current
     if (!ed) return
-    const url = window.prompt('Link URL', ed.getAttributes('link').href ?? 'https://')
-    if (url === null) return
-    if (!url.trim()) { ed.chain().focus().unsetLink().run(); return }
-    ed.chain().focus().setLink({ href: url.trim() }).run()
+    setLinkDraft(ed.getAttributes('link').href ?? '')
+    setLinkOpen(true)
+  }
+
+  function applyLink() {
+    const ed = editorRef.current
+    if (!ed) return
+    const url = linkDraft.trim()
+    setLinkOpen(false)
+    if (!url) { ed.chain().focus().unsetLink().run(); return }
+    // 只写了域名就补上 https://，省得存成相对链接点不开
+    const href = /^[a-z][\w+.-]*:/i.test(url) ? url : `https://${url}`
+    ed.chain().focus().extendMarkRange('link').setLink({ href }).run()
+  }
+
+  function removeLink() {
+    setLinkOpen(false)
+    editorRef.current?.chain().focus().extendMarkRange('link').unsetLink().run()
   }
 
   function pickImage() {
@@ -93,11 +113,17 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
       },
       onLink: promptLink,
       onImage: pickImage,
+      onSave: () => { void autosave.saveNow() },
     }),
     content: initialContent,
     onUpdate: () => autosave.schedule(),
   })
   editorRef.current = editor
+
+  useLayoutEffect(() => {
+    if (expandN > 0) setExpanded(expandAll!.on)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expandN])
 
   // 内容超过折叠高度才显示「展开」按钮
   useLayoutEffect(() => {
@@ -169,7 +195,37 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
             onClick={() => setConfirming(true)}>×</button>
         </span>
       </div>
-      {editor && <BubbleMenu editor={editor} tippyOptions={{ duration: 120 }}>
+      {/* 链接卡片：⌘K 时编辑，光标停在链接上时显示打开/改/去掉 */}
+      {editor && (
+        <BubbleMenu editor={editor} pluginKey="linkCard" tippyOptions={{ duration: 120 }}
+          shouldShow={({ editor: ed }) => linkOpen || ed.isActive('link')}>
+          <div className="link-card">
+            {linkOpen ? (
+              <>
+                <input autoFocus value={linkDraft} placeholder="Paste or type a URL"
+                  onChange={e => setLinkDraft(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { e.preventDefault(); applyLink() }
+                    if (e.key === 'Escape') { e.preventDefault(); setLinkOpen(false) }
+                  }} />
+                <button title="Apply" onClick={applyLink}>✓</button>
+                <button title="Remove link" onClick={removeLink}>✕</button>
+              </>
+            ) : (
+              <>
+                <a href={editor.getAttributes('link').href} target="_blank" rel="noreferrer"
+                  title={editor.getAttributes('link').href}>
+                  {editor.getAttributes('link').href}
+                </a>
+                <button title="Edit link" onClick={promptLink}>✎</button>
+                <button title="Remove link" onClick={removeLink}>✕</button>
+              </>
+            )}
+          </div>
+        </BubbleMenu>
+      )}
+      {editor && <BubbleMenu editor={editor} pluginKey="formatBar" tippyOptions={{ duration: 120 }}
+        shouldShow={({ editor: ed, from, to }) => from !== to && !linkOpen && !ed.isActive('link')}>
         <div className="menu-bar">
           <button className={editor.isActive('bold') ? 'on' : ''}
             onClick={() => editor.chain().focus().toggleBold().run()}><b>B</b></button>

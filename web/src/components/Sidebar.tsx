@@ -23,12 +23,6 @@ export function Sidebar({ active, onSelect, refreshKey }: {
 
   const visible = projects.filter(p => !p.archived)
 
-  async function archive(id: string) {
-    await api(`/api/projects/${id}`, { method: 'PATCH', body: JSON.stringify({ archived: true }) })
-    setProjects(ps => ps.map(p => p.id === id ? { ...p, archived: 1 } : p))
-    if (active === id) onSelect(null)
-  }
-
   async function setColor(id: string, color: string) {
     setProjects(ps => ps.map(p => p.id === id ? { ...p, color } : p))   // 先变色，不等网络
     await api(`/api/projects/${id}`, { method: 'PATCH', body: JSON.stringify({ color }) })
@@ -98,8 +92,6 @@ export function Sidebar({ active, onSelect, refreshKey }: {
 
           <button className="side-name" onClick={() => onSelect(p.id)}>{p.name}</button>
 
-          <button className="icon-btn side-archive" title="Archive this task (notes are kept)"
-            onClick={() => archive(p.id)}>⌫</button>
 
           {pickerFor === p.id && (
             <ColorWheel value={p.color} onPick={c => setColor(p.id, c)}

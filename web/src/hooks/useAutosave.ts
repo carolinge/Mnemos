@@ -44,7 +44,8 @@ export function useAutosave(opts: Opts) {
     setSaveStatus(optsRef.current.draftKey, s === 'saved' ? null : s)
   }
 
-  async function save() {
+  // checkpoint=true：⌘S 手动存档，服务端会把这一版钉住，不参与 3 分钟合并
+  async function save(checkpoint = false) {
     const payload = optsRef.current.getPayload()
     if (!idRef.current) {
       if (creating.current) { again.current = true; return }
@@ -73,7 +74,7 @@ export function useAutosave(opts: Opts) {
     try {
       const e = await api<EntryData>(`/api/entries/${idRef.current}`, {
         method: 'PATCH',
-        body: JSON.stringify({ ...payload, version: versionRef.current }),
+        body: JSON.stringify({ ...payload, version: versionRef.current, checkpoint }),
       })
       versionRef.current = e.version
       localStorage.removeItem(keyRef.current)
@@ -116,5 +117,11 @@ export function useAutosave(opts: Opts) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return { status, schedule, flush: save, entryIdRef: idRef }
+  // ⌘S：取消待跑的防抖，立刻保存并钉一个可回退的检查点
+  function saveNow() {
+    clearTimeout(timer.current)
+    return save(true)
+  }
+
+  return { status, schedule, flush: save, saveNow, entryIdRef: idRef }
 }

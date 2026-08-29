@@ -64,7 +64,47 @@ describe('entries list', () => {
   it('/api/days 返回全部有笔记的日期与计数（供时间条）', async () => {
     await seed('2026-07-01', 'a'); await seed('2026-07-01', 'b'); await seed('2026-07-03', 'c')
     const j = await (await app.request('/api/days', { headers: H() })).json()
-    expect(j).toEqual([{ day: '2026-07-01', count: 2 }, { day: '2026-07-03', count: 1 }])
+    expect(j).toEqual([
+      { day: '2026-07-01', count: 2, todo: 0 },
+      { day: '2026-07-03', count: 1, todo: 0 },
+    ])
+  })
+})
+
+describe('/api/days 的待办标记（时间条上标橙点用）', () => {
+  const todoDoc = (text, checked) => ({ type: 'doc', content: [
+    { type: 'taskList', content: [
+      { type: 'taskItem', attrs: { checked },
+        content: [{ type: 'paragraph', content: [{ type: 'text', text }] }] },
+    ] },
+  ] })
+  const put = (day, content, task) => app.request('/api/entries', {
+    method: 'POST', headers: H(), body: JSON.stringify({ day, content, task }),
+  })
+
+  it('有未打勾的待办 → todo=1；全部打勾 → todo=0', async () => {
+    await put('2026-07-01', todoDoc('还没做', false))
+    await put('2026-07-02', todoDoc('做完了', true))
+    const j = await (await app.request('/api/days', { headers: H() })).json()
+    expect(j.find(d => d.day === '2026-07-01').todo).toBe(1)
+    expect(j.find(d => d.day === '2026-07-02').todo).toBe(0)
+  })
+
+  it('同一天只要有一条没做完就算', async () => {
+    await put('2026-07-05', todoDoc('做完了', true))
+    await put('2026-07-05', todoDoc('还没做', false))
+    const j = await (await app.request('/api/days', { headers: H() })).json()
+    expect(j.find(d => d.day === '2026-07-05').todo).toBe(1)
+  })
+
+  it('按任务过滤时只看该任务的待办', async () => {
+    await put('2026-07-08', todoDoc('A 的待办', false), 'A')
+    await put('2026-07-09', todoDoc('B 做完了', true), 'B')
+    const projects = await (await app.request('/api/projects', { headers: H() })).json()
+    const b = projects.find(p => p.name === 'B')
+    const j = await (await app.request(`/api/days?project=${b.id}`, { headers: H() })).json()
+    expect(j.map(d => d.day)).toEqual(['2026-07-09'])
+    expect(j[0].todo).toBe(0)
   })
 })
 

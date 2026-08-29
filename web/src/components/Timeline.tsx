@@ -24,6 +24,8 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
   // 服务端返回的同一条要跳过，否则会重复显示一张。
   const [ownedIds, setOwnedIds] = useState<Set<string>>(new Set())
   const [awayFromBottom, setAway] = useState(false)
+  // 一键展开/收起：n 递增让所有卡片跟随 on
+  const [expandAll, setExpandAll] = useState({ on: false, n: 0 })
   const [foldedYears, setFoldedYears] = useState<Set<string>>(new Set())
   const didInitScroll = useRef(false)
 
@@ -132,7 +134,8 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
                 <div className="day-cards">
                   {d.entries.filter(e => !ownedIds.has(e.id)).map(e => (
                     <EntryCard key={e.id} entry={e} day={d.day} draftKey={e.id} tasks={tasks}
-                      onDeleted={t.removeEntry} onTaskClick={onTaskClick} />
+                      onDeleted={t.removeEntry} onTaskClick={onTaskClick}
+                      expandAll={expandAll} />
                   ))}
                   {(composers[d.day] ?? []).map(key => (
                     <EntryCard key={key} entry={null} day={d.day} draftKey={`new:${key}`} tasks={tasks}
@@ -175,6 +178,16 @@ export function Timeline({ project, anchor, tasks, showAsides, onExitAnchor, onT
           </div>
         </section>
       )}
+      <button className="expand-all" title={expandAll.on ? 'Collapse all cards' : 'Expand all cards'}
+        aria-label={expandAll.on ? 'Collapse all cards' : 'Expand all cards'}
+        onClick={() => setExpandAll(v => ({ on: !v.on, n: v.n + 1 }))}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          {expandAll.on
+            ? <><path d="M4 9l8-5 8 5" /><path d="M4 15l8 5 8-5" /></>
+            : <><path d="M4 15l8 5 8-5" /><path d="M4 9l8-5 8 5" transform="rotate(180 12 6.5)" /></>}
+        </svg>
+      </button>
       {awayFromBottom && (
         <button className="back-today" title="Back to today" aria-label="Back to today" onClick={() => {
           if (anchor) onExitAnchor()

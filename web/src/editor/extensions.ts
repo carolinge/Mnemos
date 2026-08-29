@@ -43,6 +43,7 @@ export interface ExtensionOpts {
   onTag?: (name: string) => void
   onLink?: () => void     // Mod-K
   onImage?: () => void    // Mod-Shift-I
+  onSave?: () => void     // Mod-S
 }
 
 export function buildExtensions(opts: ExtensionOpts) {
@@ -72,7 +73,7 @@ export function buildExtensions(opts: ExtensionOpts) {
     MermaidBlock,
     HtmlEmbed,
     PasteRules,
-    TyporaKeys({ onLink: opts.onLink, onImage: opts.onImage }),
+    TyporaKeys({ onLink: opts.onLink, onImage: opts.onImage, onSave: opts.onSave }),
     ...(opts.onTag ? [Hashtag(opts.onTag)] : []),
   ]
 }

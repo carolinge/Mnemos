@@ -41,6 +41,9 @@ that as first-class content rather than attachments.
   Markdown behind it, or paste a chunk in from somewhere else and switch back.
 - **A note per day.** One line, or several, about the day itself, sitting under the date.
   The 💭 button in the toolbar hides or shows them all.
+- **Links without a browser dialog.** ⌘K opens a small card next to the cursor: type or
+  paste a URL, Enter applies it, a bare domain gets `https://`. Put the cursor on a link
+  later and the same card offers open, edit or remove.
 
 ### Everything that isn't prose
 
@@ -62,12 +65,21 @@ that as first-class content rather than attachments.
 - **One card, one task.** Pick it in the card's corner or type `#taskname` in the body.
   Click a task in the sidebar for its own timeline across every date. Tasks reorder by
   dragging and carry their own colour.
+- **Todos that stay findable.** ⌘⇧X turns the current line into a checkbox (`[] ` works
+  too). On the right-hand rail, any day still carrying an unfinished todo shows an orange
+  dot instead of a blue one — open a task and the loose ends are visible at a glance.
+- **Read a whole task at once.** Inside a task, one button expands or collapses every card
+  on screen, so a project reads as continuous prose rather than a stack of four-line
+  previews.
 - **Findable later.** ⌘P opens a command palette: search the text (Chinese and English both
   work), type a date to jump there, type a task to filter. The rail on the right edge
   scrubs through months and snaps to days that have notes.
-- **Nothing is lost.** Every overwrite and every delete snapshots what it replaced, per
-  card, and any snapshot can be restored — including a deleted card, whole. Typing is
-  drafted locally first and re-sent when the connection returns.
+- **Nothing is lost.** Typing saves itself a second after you stop; every overwrite and
+  every delete snapshots what it replaced, per card, and any snapshot can be restored —
+  including a deleted card, whole. ⌘S saves at once and pins that version as a checkpoint
+  that later edits will not fold away. Tasks can be renamed, recoloured and reordered, but
+  nothing in the interface deletes one. Typing is drafted locally first and re-sent when
+  the connection returns.
 - **Easy to move in and out.** Old Typora journals (the `##### Mar 12th` shape) import
   wholesale. Exports come three ways: one Markdown file, one per month, or a print-ready
   page you save as PDF — and an exported file imports straight back.

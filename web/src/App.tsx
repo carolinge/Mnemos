@@ -124,7 +124,7 @@ export default function App() {
           onExitAnchor={() => setAnchor(null)}
           onTasksChanged={() => setProjRefresh(k => k + 1)}
           onTaskClick={id => { setProject(id); setAnchor(null); setProjRefresh(k => k + 1) }} />
-        <TimeScrubber refreshKey={projRefresh}
+        <TimeScrubber refreshKey={projRefresh} project={project}
           onJump={day => { setProject(null); setAnchor(day) }} />
       </main>
       <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)}

@@ -112,9 +112,18 @@ export function entriesRoutes(app, db) {
   })
 
   app.get('/api/days', c => {
-    return c.json(db.prepare(`
-      SELECT day, COUNT(*) AS count FROM entries WHERE deleted_at IS NULL GROUP BY day ORDER BY day
-    `).all())
+    // todo = 这天有没有未打勾的待办。taskItem 是唯一带 checked 属性的节点，
+    // 所以在 content JSON 里找 "checked":false 就够，不必另建索引。
+    const project = c.req.query('project')
+    const rows = db.prepare(`
+      SELECT day,
+             COUNT(*) AS count,
+             MAX(CASE WHEN content LIKE '%"checked":false%' THEN 1 ELSE 0 END) AS todo
+      FROM entries
+      WHERE deleted_at IS NULL ${project ? 'AND task_id = ?' : ''}
+      GROUP BY day ORDER BY day
+    `).all(...(project ? [project] : []))
+    return c.json(rows)
   })
 
   // 导入旧 Typora 日记：body.markdown 为文件全文，dryRun=true 时只返回统计
@@ -171,7 +180,7 @@ export function entriesRoutes(app, db) {
     const taskId = body.task === undefined
       ? row.task_id
       : (body.task === null ? null : resolveTask(db, body.task)?.id ?? null)
-    snapshot(db, row, 'edit')
+    snapshot(db, row, body.checkpoint ? 'manual' : 'edit')
     db.prepare(`UPDATE entries SET content = ?, text = ?, day = ?, position = ?, task_id = ?,
                 version = version + 1, updated_at = ? WHERE id = ?`)
       .run(JSON.stringify(content), extractText(content), day, position, taskId, now(), id)

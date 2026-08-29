@@ -143,3 +143,32 @@ describe('历史不会失控增长', () => {
     expect((await revisions(e.id)).some(r => r.reason === 'delete')).toBe(true)
   })
 })
+
+describe('⌘S 手动检查点', () => {
+  it('checkpoint 存的那一版永不被后续连续编辑合并掉', async () => {
+    const e = await create({ day: '2026-08-06', content: doc('起点') })
+    // 手动钉一版
+    const a = await patch(e.id, { content: doc('值得留住的一版'), version: e.version, checkpoint: true }).then(j)
+    expect((await revisions(e.id))[0].reason).toBe('manual')
+
+    // 之后连续打字若干次
+    let v = a.version
+    for (const t of ['x1', 'x2', 'x3']) {
+      v = (await patch(e.id, { content: doc(t), version: v }).then(j)).version
+    }
+    const revs = await revisions(e.id)
+    // manual 那条还在，且内容正是按下 ⌘S 时被替换掉的那一版
+    expect(revs.some(r => r.reason === 'manual' && r.text === '起点')).toBe(true)
+  })
+
+  it('不带 checkpoint 时行为不变，仍按 edit 合并', async () => {
+    const e = await create({ day: '2026-08-06', content: doc('a') })
+    let v = e.version
+    for (const t of ['b', 'c', 'd']) {
+      v = (await patch(e.id, { content: doc(t), version: v }).then(j)).version
+    }
+    const revs = await revisions(e.id)
+    expect(revs.length).toBe(1)
+    expect(revs.every(r => r.reason === 'edit')).toBe(true)
+  })
+})
