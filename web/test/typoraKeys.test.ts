@@ -21,6 +21,15 @@ function press(key: string): boolean {
 }
 
 describe('Typora 快捷键', () => {
+  it('Mod-A 全选：selectAll 命令本来就在，只是原来没绑快捷键', () => {
+    ed.commands.setTextSelection(2)
+    expect(ed.state.selection.empty).toBe(true)
+    press('Mod-a')
+    const { from, to } = ed.state.selection
+    expect(from).toBe(0)
+    expect(to).toBe(ed.state.doc.content.size)
+  })
+
   it('Mod-+ 从正文升为 H1，再升仍是 H1', () => {
     ed.commands.setTextSelection(2)
     press('Mod-+')

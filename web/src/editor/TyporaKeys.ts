@@ -33,6 +33,9 @@ export const SHORTCUT_GROUPS: { title: string; items: { keys: string; desc: stri
     { keys: 'Mod-T / Mod-Alt-T', desc: '表格' },
     { keys: 'Tab / Shift-Tab', desc: '列表缩进 / 反缩进（光标得先在列表项里）' },
   ] },
+  { title: '编辑', items: [
+    { keys: 'Mod-A', desc: '全选这张卡片' },
+  ] },
   { title: '保存', items: [
     { keys: 'Mod-S', desc: '立刻保存，并把这一版钉成可回退的检查点' },
   ] },
@@ -124,6 +127,10 @@ export const TyporaKeys = (hooks: TyporaKeyHooks = {}) => Extension.create({
     const save = () => { hooks.onSave?.(); return true }
 
     const map: Record<string, () => boolean> = {
+      // The command already exists (StarterKit includes it) — it just was
+      // never bound to a key. ProseMirror's own baseKeymap normally binds
+      // Mod-A to this by default, but StarterKit here doesn't pull that in.
+      'Mod-a': () => editor.commands.selectAll(),
       'Mod-0': () => editor.chain().focus().setParagraph().run(),
       'Mod-+': bumpHeading(-1),
       'Mod-=': bumpHeading(-1),

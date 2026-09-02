@@ -1,6 +1,6 @@
 import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { EditorContent, useEditor, BubbleMenu, FloatingMenu, type Editor } from '@tiptap/react'
-import { buildExtensions } from '../editor/extensions'
+import { buildExtensions, MATH_RENDER_RE } from '../editor/extensions'
 import { useAutosave, type EntryData } from '../hooks/useAutosave'
 import { api } from '../api'
 import { TaskPicker } from './TaskPicker'
@@ -9,6 +9,56 @@ import type { Project } from './Sidebar'
 
 const EMPTY_DOC = { type: 'doc', content: [] }
 const COLLAPSED_MAX_PX = 140   // 折叠态约四行，超出显示「展开」
+
+// Mathematics 决定显示原始 "$$…$$" 源码还是渲染成 KaTeX，看的是当前选区是否
+// 落在公式自己的字符范围内——每张卡片是独立的 editor 实例，点到别的卡片不会
+// 在这个实例上触发任何 transaction，选区留在原地，公式也就停在编辑态。失焦
+// 本身不会挪动选区，得手动挪。
+//
+// 只在选区确实落在某个公式范围内时才挪，且挪到那个公式自己的边界之外（优先
+// 挪到公式后面，没地方才挪到前面）——不用 selectAll 或某个固定的绝对位置：
+// 试过之后发现 selectAll 会导致重新点回卡片打字时，浏览器原生的光标定位跟
+// ProseMirror 内部的选区状态对不上，打字直接把原有内容整个替换掉，这个副作用
+// 比要修的原始 bug 严重得多。
+//
+// 挪到"公式后面"这一步用 setTextSelection 挪完之后要回读一下实际落点：
+// ProseMirror 对越界的位置只会 clamp 到文档里离得最近的合法光标位置，公式
+// 后面正好没别的内容时会被 clamp 回公式内部，这种情况改挪到公式前面。
+// ponytail: 公式是整张卡片唯一内容（前后都没有任何字符）时，文档里根本不存在
+// 公式范围之外的合法光标位置，这个函数救不了——公式会停在源码态直到用户输入
+// 别的字符。影响面极窄且纯视觉，不动数据，先不管；真要治就得改
+// @tiptap/extension-mathematics 自己的 decoration 逻辑。
+//
+// 这里的正则必须自己 new 一份，不能直接用共享的 MATH_RENDER_RE：那个对象是
+// 带 g 标记的，lastIndex 是它自己身上的可变状态，Mathematics 插件内部扫描
+// decoration 时也在用同一个对象、且不会在扫之前重置 lastIndex（它没理由防
+// 着别处也在用）。下面这个循环一旦找到目标就 return，不会把 exec 循环跑到
+// 自然返回 null（那是唯一会把 lastIndex 归零的时机）——用同一个对象会把
+// lastIndex 停在中间某个值，插件下一次扫描就从那个位置开始找，直接把这张
+// 公式漏掉，decoration 保持旧状态、公式渲染不出来。踩过这个坑：单元测试里
+// 一步到位必现，浏览器里因为后面往往还会有别的 transaction 顺带把 lastIndex
+// 扫回 0，容易误以为没事。
+export function closeActiveFormula(ed: Editor) {
+  const { doc, selection } = ed.state
+  const pos = selection.from
+  const $pos = doc.resolve(pos)
+  if (!$pos.parent.isTextblock) return
+  const text = $pos.parent.textContent
+  const blockStart = $pos.start()
+  const re = new RegExp(MATH_RENDER_RE.source, MATH_RENDER_RE.flags)
+  let match: RegExpExecArray | null
+  while ((match = re.exec(text))) {
+    const from = blockStart + match.index
+    const to = from + match[0].length
+    if (pos < from || pos > to) continue
+    ed.commands.setTextSelection(Math.min(to + 1, doc.content.size))
+    const landed = ed.state.selection.from
+    if (landed > from && landed <= to) {
+      ed.commands.setTextSelection(Math.max(from - 1, 0))
+    }
+    return
+  }
+}
 
 export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, onDiscard, onTaskClick, expandAll }: {
   entry: EntryData | null      // null = 尚未落库的新条目
@@ -117,6 +167,7 @@ export function EntryCard({ entry, day, draftKey, tasks, onCreated, onDeleted, o
     }),
     content: initialContent,
     onUpdate: () => autosave.schedule(),
+    onBlur: ({ editor: ed }) => closeActiveFormula(ed),
   })
   editorRef.current = editor
 

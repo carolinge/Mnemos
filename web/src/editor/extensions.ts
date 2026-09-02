@@ -38,6 +38,11 @@ const lowlight = createLowlight({
   python, javascript, typescript, bash, json, yaml, sql, r, matlab, cpp, latex,
 })
 
+// 导出而不是内联在下面的 configure() 里——EntryCard 的 onBlur 需要用同一个
+// 正则去判断"光标是不是恰好停在某个公式的字符范围里"，两边各写一份迟早会
+// 走样。
+export const MATH_RENDER_RE = /\$\$([^$]+)\$\$|\$(?!\s)([^$\n]*[^$\s])\$/g
+
 export interface ExtensionOpts {
   placeholder?: string
   onTag?: (name: string) => void
@@ -65,7 +70,7 @@ export function buildExtensions(opts: ExtensionOpts) {
     // 默认正则是 /\$([^$]*)\$/，会把 $$…$$ 读成一对空的 $ $，
     // 块级公式因此整段漏成源码。改成两种都吃，$$ 的那一版走 KaTeX 的 display 模式。
     Mathematics.configure({
-      regex: /\$\$([^$]+)\$\$|\$(?!\s)([^$\n]*[^$\s])\$/g,
+      regex: MATH_RENDER_RE,
       katexOptions: { throwOnError: false },
     }),
     CitationNode,
